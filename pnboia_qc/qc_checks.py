@@ -26,6 +26,8 @@ import time
 import math
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
 
 class QCChecks():
 
@@ -60,7 +62,10 @@ class QCChecks():
     def plot_comparison(self,
                         parameter:str,
                         ylim:list,
-                        flag:str='all'):
+                        flag:str='all',
+                        plot_type='matplotlib',
+                        start_date=None,
+                        end_date=None):
 
         if flag == 'hard':
             bool_array = np.logical_or(self.flag[parameter]<1, self.flag[parameter]>50)
@@ -75,12 +80,39 @@ class QCChecks():
 
         self.filtered_data = self.data[parameter][bool_array]
         self.filtered_bad_data = self.data[parameter][bool_array_2]
-        
-        plt.plot(self.data.index, self.data[parameter], label = f"raw_{parameter}")
-        plt.plot(self.filtered_data.index, self.filtered_data, label = "qc_{parameter}")
-        plt.plot(self.filtered_bad_data.index, self.filtered_bad_data,marker='o', label = "bad_qc_{parameter}")
-        plt.ylim(ylim[0], ylim[1])
-        plt.show()
+
+        self.data_selected = self.data[parameter]
+        if start_date != None:
+            start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            self.data_selected = self.data_selected.loc[self.data_selected.index>start_date]
+            self.filtered_data = self.filtered_data.loc[self.filtered_data.index>start_date]
+            self.filtered_bad_data = self.filtered_bad_data.loc[self.filtered_bad_data.index>start_date]
+        if end_date != None:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            self.data_selected = self.data_selected.loc[self.data_selected.index<end_date]
+            self.filtered_data = self.filtered_data.loc[self.filtered_data.index<end_date]
+            self.filtered_bad_data = self.filtered_bad_data.loc[self.filtered_bad_data.index<end_date]
+
+        if plot_type == 'matplotlib':
+            plt.plot(self.data_selected.index, self.data_selected, label = f"raw_{parameter}")
+            plt.plot(self.filtered_data.index, self.filtered_data, label = "qc_{parameter}")
+            plt.plot(self.filtered_bad_data.index, self.filtered_bad_data,marker='o', label = "bad_qc_{parameter}")
+            plt.ylim(ylim[0], ylim[1])
+            plt.show()
+        elif plot_type == 'plotly':
+            fig = go.Figure(layout_yaxis_range=[ylim[0],ylim[1]])
+            fig.add_trace(go.Scatter(x=self.data_selected.index, y=self.data_selected,
+                                mode='lines',
+                                name='all data'))
+            fig.add_trace(go.Scatter(x=self.filtered_data.index, y=self.filtered_data,
+                                mode='lines',
+                                name='good_data'))
+            fig.add_trace(go.Scatter(x=self.filtered_bad_data.index, y=self.filtered_bad_data,
+                                mode='markers',
+                                name='bad_data'))
+            fig.show()
+
+
 
 
     def mis_value_check(self,
