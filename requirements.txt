@@ -12,6 +12,7 @@ openpyxl
 matplotlib
 plotly
 
+ioos-qc==2.0.1
 
 jupyter==1.0.0
 jupyter-client==7.1.0
