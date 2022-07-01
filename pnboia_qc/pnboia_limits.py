@@ -36,6 +36,7 @@ sigma_axys_limits = {
 
 mis_value_axys_limits = {
     "rh": [11, -9999, np.nan],
+    "wspd1": [-9999, np.nan],
     "cspd1": [409.5, -9999, np.nan],
     "cdir1": [511, -9999, np.nan],
     "cspd2": [409.5, -9999, np.nan],

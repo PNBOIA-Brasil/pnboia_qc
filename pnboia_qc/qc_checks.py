@@ -44,24 +44,24 @@ class QCChecks():
         ):
 
         self.id_flag = {
-            
+
         }
 
         self.mis_values = mis_values
-        self.limits = limits       
+        self.limits = limits
         self.climate_limits = climate_limits
         self.stuck_limit = stuck_limit
         self.sigma_values = sigma_values
         self.height = height
         self.continuity_limit = continuity_limit
-        
+
         self.data = data
 
         self.flag = (self.data[variables] * 0).replace(np.nan, 0).astype(int)
 
     def plot_comparison(self,
                         parameter:str,
-                        ylim:list,
+                        ylim:list=None,
                         flag:str='all',
                         plot_type='matplotlib',
                         start_date=None,
@@ -102,10 +102,10 @@ class QCChecks():
         elif plot_type == 'plotly':
             fig = go.Figure(layout_yaxis_range=[ylim[0],ylim[1]])
             fig.add_trace(go.Scatter(x=self.data_selected.index, y=self.data_selected,
-                                mode='lines',
+                                mode='markers',
                                 name='all data'))
             fig.add_trace(go.Scatter(x=self.filtered_data.index, y=self.filtered_data,
-                                mode='lines',
+                                mode='markers',
                                 name='good_data'))
             fig.add_trace(go.Scatter(x=self.filtered_bad_data.index, y=self.filtered_bad_data,
                                 mode='markers',
@@ -135,7 +135,7 @@ class QCChecks():
 
         if mis_values == None:
             mis_values = self.mis_values[parameter]
-           
+
         try:
             for mis_value in mis_values:
                 self.flag.loc[
@@ -164,10 +164,10 @@ class QCChecks():
 
         Represented by number "2" -> HARD FLAG
         """
-        
+
         if limits == None:
             limits = self.limits[parameter]
-            
+
         try:
             self.flag.loc[(self.data[parameter] < limits[0]) & (self.flag[parameter] == 0), parameter] = 2
             self.flag.loc[(self.data[parameter] > limits[1]) & (self.flag[parameter] == 0), parameter] = 2
@@ -187,7 +187,7 @@ class QCChecks():
         - parameter: name of variable that will be checked
         - limits: climatology limits. It must be a tuple with
         the minimum and maximum value
-        
+
         Required checks: Missing value check, range check
 
         Represented by number "9" -> HARD FLAG
@@ -304,7 +304,7 @@ class QCChecks():
 
         Represented by number "6" -> HARD FLAG
         """
-        
+
         if stuck_limit == None:
             stuck_limit = self.stuck_limit
 
@@ -433,7 +433,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check climate,
         stuck sensor, time continuity
-        
+
         Frontal exception 1
         Relation between wind direction and air temperature
 
@@ -460,7 +460,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check climate,
         stuck sensor, time continuity
-        
+
         Frontal exception 3
         Relation between wind speed and air temperature 2
 
@@ -484,7 +484,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check climate,
         stuck sensor, time continuity
-        
+
         Frontal exception 4
         Relation between low pressure and wind speed
 
@@ -523,7 +523,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check climate,
         stuck sensor, time continuity
-        
+
         Frontal exception 5
         Relation between two pressures
 
@@ -564,7 +564,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check climate,
         stuck sensor, time continuity
-        
+
         Frontal exception 6
         Relation between significance wave height and wind speed
 
@@ -624,4 +624,3 @@ class QCChecks():
         self.data.loc[(self.data[mean_tp_name] >= 5), "hmax"] = (1.16 * self.data[mean_tp_name]) - 2
 
         self.flag.loc[(self.data[swvht_name] <= self.data["hmax"]) & (self.data[swvht_name] == 0)] = 62
-
