@@ -8,3 +8,4 @@ raw_data/
 .env
 *.xlsx
 *.xls
+pnboia_qc/raw_data
