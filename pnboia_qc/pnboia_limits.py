@@ -51,7 +51,7 @@ mis_value_axys_limits = {
     "mxwvht": [20.47, -9999, np.nan],
     "tp": [25.5, -9999, np.nan],
     "wvdir": [381, -9999, np.nan],
-    "spred": [381, -9999, np.nan]
+    "wvspread": [381, -9999, np.nan]
     }
 
 climate_axys_limits = {
@@ -76,7 +76,7 @@ climate_axys_limits = {
 
 
 std_mean_values = {
-    "wwht": [0, 15],
+    "swvht": [0, 15],
     "mxwvht": [0, 19],
     "tp": [1.7, 20],
     "wspd": [0, 59],
