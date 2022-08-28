@@ -36,28 +36,34 @@ class QCChecks():
         variables:list,
         mis_values:dict=None,
         limits:dict=None,
-        climate_limits:dict=None,
+        fine_limits:dict=None,
         stuck_limit:int=None,
         sigma_values:dict=None,
         continuity_limit:int=None,
-        height:dict=None
+        height:dict=None,
+        qc_config:dict=None
         ):
 
         self.id_flag = {
             
         }
 
+        self.tests = list(filter(lambda a: a[0] != '_', dir(self)))
+
         self.mis_values = mis_values
         self.limits = limits       
-        self.climate_limits = climate_limits
+        self.fine_limits = fine_limits
         self.stuck_limit = stuck_limit
         self.sigma_values = sigma_values
         self.height = height
         self.continuity_limit = continuity_limit
-        
+
+        self.qc_config = qc_config
+
         self.data = data
 
         self.flag = (self.data[variables] * 0).replace(np.nan, 0).astype(int)
+
 
     def plot_comparison(self,
                         parameter:str,
@@ -115,7 +121,7 @@ class QCChecks():
 
 
 
-    def mis_value_check(self,
+    def mis_value(self,
                         parameter:str,
                         mis_values:list = None):
 
@@ -145,11 +151,12 @@ class QCChecks():
             print("No mis_value_limit for " + parameter)
 
         self.flag.loc[(self.data[parameter] == np.nan) & (self.flag[parameter] == 0), parameter] = 1
-
-
-    def range_check(self,
+        print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 1, parameter].count()} flagged data')
+    
+    def range(self,
                     parameter:str,
-                    limits:list= None):
+                    limits:list= None,
+                    test:str='gross'):
 
         """
         Range check
@@ -163,47 +170,24 @@ class QCChecks():
         Required checks: Missing value check
 
         Represented by number "2" -> HARD FLAG
-        """
-        
-        if limits == None:
-            limits = self.limits[parameter]
-            
+        """        
         try:
-            self.flag.loc[(self.data[parameter] < limits[0]) & (self.flag[parameter] == 0), parameter] = 2
-            self.flag.loc[(self.data[parameter] > limits[1]) & (self.flag[parameter] == 0), parameter] = 2
+            if test == 'gross':
+                flag_id = 2
+                if limits == None:
+                    limits = self.limits[parameter]
+            if test == 'fine':
+                flag_id = 9
+                if limits == None:
+                    limits = self.fine_limits[parameter]
+            self.flag.loc[(self.data[parameter] < limits[0]) & (self.flag[parameter] == 0), parameter] = flag_id
+            self.flag.loc[(self.data[parameter] > limits[1]) & (self.flag[parameter] == 0), parameter] = flag_id
+            print(f'{parameter}: {self.flag.loc[self.flag[parameter] == flag_id, parameter].count()} flagged data')
         except:
             print("No range_limit for " + parameter)
 
 
-    def range_check_climate(self,
-                            parameter:str,
-                            climate_limits:list = None):
-
-        """
-        Range check Climate
-        Check to ensure values are within climatology ranges
-
-        Required input:
-        - parameter: name of variable that will be checked
-        - limits: climatology limits. It must be a tuple with
-        the minimum and maximum value
-        
-        Required checks: Missing value check, range check
-
-        Represented by number "9" -> HARD FLAG
-        """
-
-        if climate_limits == None:
-            climate_limits = self.climate_limits[parameter]
-
-        try:
-            self.flag.loc[(self.data[parameter] < climate_limits[0]) & (self.flag[parameter] == 0), parameter] = 9
-            self.flag.loc[(self.data[parameter] > climate_limits[1]) & (self.flag[parameter] == 0), parameter] = 9
-        except:
-            print("No range_climate_limit for " + parameter)
-
-
-    def swvht_mxwvht_check(self,
+    def swvht_mxwvht(self,
                            swvht_name:str = 'swvht',
                            mxwvht_name:str = 'mxwvht'):
 
@@ -215,15 +199,17 @@ class QCChecks():
         - swvht_name: name used in the dataframe for Wave Significance Height
         - mxwvht_name: name used in the dataframe for Maximun Wave Height
 
-        Required checks: Missing value check, range check, range check climate
+        Required checks: Missing value check, range check, range check fine
 
         Represented by number "4" -> HARD FLAG
         """
 
         self.flag.loc[(self.data[swvht_name] > self.data[mxwvht_name]) & (self.flag[swvht_name] == 0), swvht_name] = 4
         self.flag.loc[(self.data[swvht_name] > self.data[mxwvht_name]) & (self.flag[mxwvht_name] == 0), mxwvht_name] = 4
+        print(f'{swvht_name}: {self.flag.loc[self.flag[swvht_name] == 4, swvht_name].count()} flagged data')
+        print(f'{mxwvht_name}: {self.flag.loc[self.flag[mxwvht_name] == 4, mxwvht_name].count()} flagged data')
 
-    def wind_speed_gust_check(self,
+    def wind_speed_gust(self,
                               wspd_name:str = 'wspd',
                               gust_name:str = 'gust'):
 
@@ -236,7 +222,7 @@ class QCChecks():
         - wspd_name: name used in the dataframe for wind speed
         - gust_name: name used in the dataframe for gust speed
 
-        Required checks: Missing value check, range check, range check climate
+        Required checks: Missing value check, range check, range check fine
 
         Represented by number "3" -> HARD FLAG
         """
@@ -244,9 +230,10 @@ class QCChecks():
         self.flag.loc[(self.data[wspd_name] > self.data[gust_name]) & (self.flag[wspd_name] == 0), wspd_name] = 3
         self.flag.loc[(self.data[wspd_name] > self.data[gust_name]) & (self.flag[gust_name] == 0), gust_name] = 3
         self.flag.loc[(self.data[gust_name] < 0.5) & (self.flag[gust_name] == 0), gust_name] = 3
+        print(f'{wspd_name}: {self.flag.loc[self.flag[wspd_name] == 3, wspd_name].count()} flagged data')
+        print(f'{gust_name}: {self.flag.loc[self.flag[gust_name] == 3, gust_name].count()} flagged data')
 
-
-    def dewpt_atmp_check(self,
+    def dewpt_atmp(self,
                          dewpt_name:str = 'dewpt',
                          atmp_name:str = 'atmp'):
 
@@ -259,16 +246,16 @@ class QCChecks():
         - dewpt_name: name used in the dataframe for dew point
         - atmp_name: name used in the dataframe for air temperature
 
-        Required checks: Missing value check, range check, range check climate
+        Required checks: Missing value check, range check, range check fine
 
         Represented by number "51" -> SOFT FLAG
         """
 
         self.flag.loc[(self.data[dewpt_name] > self.data[atmp_name]) & (self.flag[dewpt_name] == 0)  & (self.flag[atmp_name] == 0), dewpt_name] = 51
         self.data.loc[(self.flag[dewpt_name] == 51), dewpt_name] = self.data[atmp_name]
+        print(f'{dewpt_name}: {self.flag.loc[self.flag[dewpt_name] == 51, dewpt_name].count()} flagged data')
 
-
-    def bat_sensor_check(self,
+    def battery(self,
                          battery_name:str='battery',
                          pres_name:str='pres'):
 
@@ -280,15 +267,16 @@ class QCChecks():
         - pres_name: name used in the dataframe for pressure
         - battery_name: name used in the dataframe for battery
 
-        Required checks: Missing value check, range check, range check climate
+        Required checks: Missing value check, range check, range check fine
 
         Represented by number "5" -> HARD FLAG
         """
 
         self.flag.loc[(self.data[battery_name] <= 10.5) & (self.flag[pres_name] == 0), pres_name] = 5
+        print(f'{pres_name}: {self.flag.loc[self.flag[pres_name] == 5, pres_name].count()} flagged data')
 
 
-    def stuck_sensor_check (self,
+    def stuck_sensor(self,
                             parameter:str,
                             stuck_limit:int = None):
 
@@ -300,7 +288,7 @@ class QCChecks():
         - parameter: name of variable that will be checked
         - limits: number of repetition used in the test
 
-        Required checks: Missing value check, range check, range check climate
+        Required checks: Missing value check, range check, range check fine
 
         Represented by number "6" -> HARD FLAG
         """
@@ -308,17 +296,16 @@ class QCChecks():
         if stuck_limit == None:
             stuck_limit = self.stuck_limit
 
-        for counter in range(len(self.data)):
-            value = self.data.loc[(self.data.index >= self.data.index[counter]) & (self.data.index <= self.data.index[counter] + pd.to_timedelta(stuck_limit, unit='h')) & (self.flag[parameter] == 0) & (self.flag[parameter] == 6), parameter]
-            if value.size == 0:
-                continue
-            elif np.array(value == value[0]).all() and self.data.index[-1] - self.data.index[counter] >= pd.to_timedelta(limit, unit='h'):
-                self.flag.loc[(index), parameter] = 6
+        value = self.data.loc[(self.flag[parameter] == 0), parameter].diff().abs()
+        value = value.rolling(f'{stuck_limit}H').sum()
+        index = value[value == 0].index
+        self.flag.loc[(index), parameter] = 6
+        print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 6, parameter].count()} flagged data')
 
-    def convert_10_meters(self,
+    def convert_wind(self,
                           wspd_name:str='wspd',
                           gust_name:str='gust',
-                          height:float=None):
+                          height:float=10):
 
         """
         Convert wind to 10 meters
@@ -329,7 +316,7 @@ class QCChecks():
         - gust_name: name used in the dataframe for gust speed
         - height: height of anemometer sensor in the buoy
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, windspeedgust check
 
         Return: var
@@ -342,8 +329,9 @@ class QCChecks():
         self.data.loc[(self.flag[gust_name] == 0), gust_name] = self.data[gust_name] * (10 / height) ** 0.11
 
 
-    def related_meas_check(self,
-                           parameters:list):
+    def best_sensor(self,
+                            parameters1:list=["wspd1", "wdir1", "gust1"],
+                            parameters2:list=["wspd2", "wdir2", "gust2"]):
 
         """
         Related Measurement Check
@@ -353,29 +341,29 @@ class QCChecks():
         - parameters: array of parameters names of wind data
         Example - ['wspd1', 'wspd2', 'wdir1', 'wdir2', 'gust1', 'gust2']
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, windspeedgust check, convert_10_meters
 
         """
 
-        self.data["wspd"] = self.data[parameters[0]]
-        self.data["wdir"] = self.data[parameters[2]]
-        self.data["gust"] = self.data[parameters[4]]
+        self.data["wspd"] = self.data[parameters1[0]]
+        self.data["wdir"] = self.data[parameters1[1]]
+        self.data["gust"] = self.data[parameters1[2]]
 
-        self.flag["wspd"] = self.flag[parameters[0]]
-        self.flag["wdir"] = self.flag[parameters[2]]
-        self.flag["gust"] = self.flag[parameters[4]]
+        self.flag["wspd"] = self.flag[parameters1[0]]
+        self.flag["wdir"] = self.flag[parameters1[1]]
+        self.flag["gust"] = self.flag[parameters1[2]]
 
-        self.data.loc[(self.flag[parameters[0]] != 0) & (self.flag[parameters[1]] == 0), "wspd"] = self.data[parameters[1]]
-        self.flag.loc[(self.flag[parameters[0]] != 0) & (self.flag[parameters[1]] == 0), "wspd"] = self.flag[parameters[1]]
+        self.data.loc[(self.flag[parameters1[0]] != 0) & (self.flag[parameters2[0]] == 0), "wspd"] = self.data[parameters2[0]]
+        self.flag.loc[(self.flag[parameters1[0]] != 0) & (self.flag[parameters2[0]] == 0), "wspd"] = self.flag[parameters2[0]]
 
-        self.data.loc[(self.flag[parameters[2]] != 0) & (self.flag[parameters[3]] == 0), "wdir"] = self.data[parameters[3]]
-        self.flag.loc[(self.flag[parameters[2]] != 0) & (self.flag[parameters[3]] == 0), "wdir"] = self.flag[parameters[3]]
+        self.data.loc[(self.flag[parameters1[1]] != 0) & (self.flag[parameters2[1]] == 0), "wdir"] = self.data[parameters2[1]]
+        self.flag.loc[(self.flag[parameters1[1]] != 0) & (self.flag[parameters2[1]] == 0), "wdir"] = self.flag[parameters2[1]]
 
-        self.data.loc[(self.flag[parameters[4]] != 0) & (self.flag[parameters[5]] == 0), "gust"] = self.data[parameters[5]]
-        self.flag.loc[(self.flag[parameters[4]] != 0) & (self.flag[parameters[5]] == 0), "gust"] = self.flag[parameters[5]]
+        self.data.loc[(self.flag[parameters1[2]] != 0) & (self.flag[parameters2[2]] == 0), "gust"] = self.data[parameters2[2]]
+        self.flag.loc[(self.flag[parameters1[2]] != 0) & (self.flag[parameters2[2]] == 0), "gust"] = self.flag[parameters2[2]]
 
-    def t_continuity_check(self,
+    def t_continuity(self,
                            parameter:str,
                            sigma:float = None,
                            continuity_limit:int = None):
@@ -389,7 +377,7 @@ class QCChecks():
         - limit: number of hour considered in the time continuity test
         - parameter: name user in the dataframe to represent the parameter
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor
 
         Represented by number "8" -> HARD FLAG
@@ -422,8 +410,9 @@ class QCChecks():
         self.flag.loc[(self.flag["tmp_backward"] == 1) | (self.flag["tmp_forward"] == 1), parameter] = 8
 
         self.flag.drop(columns=['tmp_forward','tmp_backward'], inplace=True)
+        print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 8, parameter].count()} flagged data')
 
-    def front_except_check1(self,
+    def front_except1(self,
                             wdir_name:str='wdir',
                             atmp_name:str='atmp'):
 
@@ -431,7 +420,7 @@ class QCChecks():
         Frontal exception for time continuity checks
         Exception for the time continuity during frontal passages
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
         
         Frontal exception 1
@@ -449,8 +438,9 @@ class QCChecks():
         select_value = self.data.loc[((self.flag[atmp_name] == 8) | (self.flag[atmp_name] == 0)) & (self.flag[wdir_name] == 0)]
 
         self.flag.loc[(select_value.loc[(select_value[wdir_name].diff() > 40) &  (select_value[wdir_name].diff() < - 40) & (self.flag[atmp_name] == 8), atmp_name].index)] == 53
+        print(f'{atmp_name}: {self.flag.loc[self.flag[atmp_name] == 53, atmp_name].count()} flagged data')
 
-    def front_except_check3(self,
+    def front_except3(self,
                             wspd_name:str='wspd',
                             atmp_name:str='atmp'):
 
@@ -458,7 +448,7 @@ class QCChecks():
         Frontal exception for time continuity checks
         Exception for the time continuity during frontal passages
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
         
         Frontal exception 3
@@ -472,9 +462,10 @@ class QCChecks():
         """
 
         self.flag.loc[((self.flag[atmp_name] == 8) & (self.flag[wspd_name] == 0) & (self.data[wspd_name] > 7)), atmp_name ] = 55
+        print(f'{atmp_name}: {self.flag.loc[self.flag[atmp_name] == 55, atmp_name].count()} flagged data')
 
 
-    def front_except_check4(self,
+    def front_except4(self,
                             pres_name='pres',
                             wspd_name='wspd'):
 
@@ -482,7 +473,7 @@ class QCChecks():
         Frontal exception for time continuity checks
         Exception for the time continuity during frontal passages
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
         
         Frontal exception 4
@@ -512,16 +503,18 @@ class QCChecks():
 
         self.flag.loc[(self.flag.index.isin(select_value.index)), wspd_name] = 56
 
+        print(f'{wspd_name}: {self.flag.loc[self.flag[wspd_name] == 56, wspd_name].count()} flagged data')
+
         del self.data['date_time']
 
-    def front_except_check5(self,
+    def front_except5(self,
                             pres_name:str='pres'):
 
         """
         Frontal exception for time continuity checks
         Exception for the time continuity during frontal passages
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
         
         Frontal exception 5
@@ -553,8 +546,9 @@ class QCChecks():
         self.flag.loc[(self.flag.index.isin(select_value.index)), pres_name] = 57
 
         self.data.drop(columns=['date_time'], inplace=True)
+        print(f'{pres_name}: {self.flag.loc[self.flag[pres_name] == 57, pres_name].count()} flagged data')
 
-    def front_except_check6(self,
+    def front_except6(self,
                          wspd_name:str = 'wspd',
                          swvht_name:str = 'swvht'):
 
@@ -562,7 +556,7 @@ class QCChecks():
         Frontal exception for time continuity checks
         Exception for the time continuity during frontal passages
 
-        Required checks: Missing value check, range check, range check climate,
+        Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
         
         Frontal exception 6
@@ -579,8 +573,9 @@ class QCChecks():
         """
 
         self.flag.loc[((self.flag[swvht_name] == 8) & (self.data[wspd_name] >= 15)), swvht_name ] = 58
+        print(f'{swvht_name}: {self.flag.loc[self.flag[swvht_name] == 58, swvht_name].count()} flagged data')
 
-    def comparison_related_check(self,
+    def comparison_related(self,
                                  parameters:list):
 
         """
@@ -599,7 +594,7 @@ class QCChecks():
             for param in params_test:
                 self.flag.loc[((self.flag[param] < 51) & (self.flag[param] > 0) & (self.flag[parameters[i]] == 0)), parameters[i]] = 60
 
-    def hsts_check(self,
+    def hsts(self,
                    swvht_name:str = 'swvht',
                    mean_tp_name:str='mean_tp'):
 
@@ -625,3 +620,125 @@ class QCChecks():
 
         self.flag.loc[(self.data[swvht_name] <= self.data["hmax"]) & (self.data[swvht_name] == 0)] = 62
 
+    def ascat_anemometer(self,
+                                limits:dict,
+                                parameters1:list=["wspd1", "wdir1", "gust1"],
+                                parameters2:list=["wspd2", "wdir2", "gust2"]):
+        
+        """
+        Comparison of Measurement Check
+        Relation between related measurement (wind speed, gust, etc)
+
+        Required input:
+        - parameters: list of parameters names to be related
+
+        Return: flag
+        Represented by number "60" -> SOFT FLAG
+        """
+
+        for limit in limits:
+            if limit["choice"] == 0:
+                self.flag.loc[(self.flag.index >= limit["start_date"]) & (self.flag.index < limit["end_date"]), parameters1] = 11
+                self.flag.loc[(self.flag.index >= limit["start_date"]) & (self.flag.index < limit["end_date"]), parameters2] = 11
+            elif limit["choice"] == 1:
+                self.flag.loc[(self.flag.index >= limit["start_date"]) & (self.flag.index < limit["end_date"]), parameters2] = 11
+            elif limit["choice"] == 2:
+                self.flag.loc[(self.flag.index >= limit["start_date"]) & (self.flag.index < limit["end_date"]), parameters1] = 11
+
+
+    def run(self):
+        if self.qc_config:
+            for func_value in self.qc_config.keys():
+                if func_value == 'miss_value':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.mis_value(parameter=parameter, mis_values=self.qc_config[func_value]['limits'][idx])
+                elif func_value == 'gross_range':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='gross')
+                elif func_value == 'fine_range':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='fine')
+                elif func_value == 'fine_range':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='fine')
+                elif func_value == 'ascat_anemometer':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    self.ascat_anemometer(limits=self.qc_config[func_value]['limits'],
+                                            parameters1=self.qc_config[func_value]['parameters'][0],
+                                            parameters2=self.qc_config[func_value]['parameters'][1])
+                elif func_value == 'swvht_mxwvht':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        self.swvht_mxwvht(swvht_name = parameter[0], mxwvht_name = parameter[1])
+                elif func_value == 'wind_speed_gust':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        self.wind_speed_gust(wspd_name=parameter[0], gust_name=parameter[1])
+                elif func_value == 'dewpt_atmp':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        self.dewpt_atmp(dewpt_name=parameter[0], atmp_name=parameter[1])
+                elif func_value == 'battery':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        self.battery(battery_name=parameter[0], pres_name=parameter[1])
+                elif func_value == 'stuck_sensor':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.stuck_sensor(parameter=parameter, stuck_limit=self.qc_config[func_value]['limits'])
+                elif func_value == 'convert_wind':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        self.convert_wind(wspd_name=parameter[0], gust_name=parameter[1])
+                elif func_value == 'best_sensor':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    self.best_sensor(parameters1=self.qc_config[func_value]['parameters'][0],
+                                    parameters2=self.qc_config[func_value]['parameters'][1])
+                elif func_value == 't_continuity':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.t_continuity(parameter=parameter,
+                                        sigma=self.qc_config[func_value]['sigma'][idx],
+                                        continuity_limit=self.qc_config[func_value]['limits'])
+                    front_excepts = self.qc_config[func_value]['exceptions']
+                    if front_excepts:
+                        print('-------------')
+                        for front_except in front_excepts:
+                            if front_except['test'] == 1:
+                                print(f'Check {func_value}: exception 1')
+                                self.front_except1(wdir_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
+                            elif front_except['test'] == 3:
+                                print(f'Check {func_value}: exception 3')
+                                self.front_except3(wspd_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
+                            elif front_except['test'] == 4:
+                                print(f'Check {func_value}: exception 4')
+                                self.front_except4(pres_name=front_except['parameters'][0], wspd_name=front_except['parameters'][0])
+                            elif front_except['test'] == 5:
+                                print(f'Check {func_value}: exception 5')
+                                self.front_except5(pres_name=front_except['parameters'])
+                            elif front_except['test'] == 6:
+                                print(f'Check {func_value}: exception 6')
+                                self.front_except6(wspd_name=front_except['parameters'][0], swvht_name=front_except['parameters'][0])
