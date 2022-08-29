@@ -7,12 +7,7 @@ import plotly.graph_objs as go
 
 def gen_outlier_lim(data,std_factor=3.):
     # drop unwanted parameters
-    data = data.drop(columns=['Lat', 'Lon', 'Battery', 'bHead','wdir','Cdir1',
-                                'Cdir2','Cdir3','Mwd','Spread', 'lat','lon',
-                                'mwd', 'spred', 'peak_mwd', 'peak_spred', 'mean_dpd',
-                                'compass','cdir1','cdir2','cdir3','wvdir1',
-                                'Latitude', 'Longitude', 'Unnamed: 0'
-                                ])
+    data = data.drop(columns='battery')
     # get buoys names
     buoys = data.index.levels[0]
     # generate global df
@@ -40,13 +35,7 @@ def gen_outlier_lim(data,std_factor=3.):
 
 def gen_cont_lims(data,std_factor=3.):
     # drop unwanted parameters
-    data = data.drop(columns=['Lat', 'Lon', 'Battery', 'bHead','wdir','Cdir1',
-                                'Cdir2','Cdir3','Mwd','Spread', 'lat','lon',
-                                'mwd', 'spred', 'peak_mwd', 'peak_spred', 'mean_dpd',
-                                'compass','cdir1','cdir2','cdir3','wvdir1',
-                                'Latitude', 'Longitude', 'Unnamed: 0'
-                                ])
-
+    data = data.drop(columns='battery')
     # get buoys names
     buoys = data.index.levels[0]
     # generate global df
@@ -70,7 +59,6 @@ def filter_data(data,
                 buoy,
                 limits,
                 save_df=False,
-                manual_lims=False,
                 range_axys_limits=None,
                 continuity_axys_limits=None):
 
@@ -78,13 +66,14 @@ def filter_data(data,
     variables = buoy_df.columns.to_list()
 
 
-    if manual_lims:
+    if range_axys_limits:
         climate_limits = range_axys_limits
-        # continuity_limit = continuity_axys_limits
-        continuity_limit = limits['continuity_axys_limits']
-
     else:
         climate_limits = limits['climate_axys_limits']
+
+    if continuity_axys_limits:
+        continuity_limit = continuity_axys_limits
+    else:
         continuity_limit = limits['continuity_axys_limits']
 
     qc = QCChecks(data=buoy_df,
@@ -165,8 +154,14 @@ def filter_data(data,
     return filtered_data
 
 def manual_outlier_lims(buoy,limits_df):
-    lims_values = limits_df.loc[buoy,['lower_lim','upper_lim']].values
-    keys = limits_df.loc[buoy,['lower_lim','upper_lim']].index
+
+    if isinstance(limits_df.index, pd.MultiIndex):
+        lims_values = limits_df.loc[buoy,['lower_lim','upper_lim']].values.tolist()
+        keys = limits_df.loc[buoy,['lower_lim','upper_lim']].index
+    else:
+        lims_values = limits_df.loc[:,['lower_lim','upper_lim']].values.tolist()
+        keys = limits_df.loc[:,['lower_lim','upper_lim']].index
+
     outlier_lims_manual = dict()
     for key, value in zip(keys,lims_values):
         outlier_lims_manual[key] = value
