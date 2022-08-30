@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from pnboia_qc.qc_checks import QCChecks
 
+import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 
 
@@ -153,6 +154,7 @@ def filter_data(data,
 
     return filtered_data
 
+
 def manual_outlier_lims(buoy,limits_df):
 
     if isinstance(limits_df.index, pd.MultiIndex):
@@ -168,7 +170,8 @@ def manual_outlier_lims(buoy,limits_df):
 
     return outlier_lims_manual
 
-def plot(data_raw,
+
+def plot_interactive(data_raw,
          data_filt,
          parameter):
 
@@ -202,3 +205,33 @@ def plot(data_raw,
     plot = fig.show()
 
     return plot
+
+
+def plot_hist(data,
+              parameter,
+              color='lightcoral'):
+
+    # stats calcs
+    mean = data[parameter].mean()
+    median = data[parameter].median()
+
+    fig, ax = plt.subplots(1,2,sharey=True, figsize=(13,3.5),gridspec_kw={'width_ratios': [3, 0.4]})
+    plt.subplots_adjust(wspace=0.03)
+
+    data[parameter].plot(ls='None', marker='.', color=color, grid=False, ax=ax[0])
+    ax[1].hist(data[parameter], color=color,bins=50, orientation='horizontal',alpha=0.8);
+
+    ymin, ymax = ax[1].get_ylim()
+    y_dash_line = ymin + (ymax-ymin)/2
+    ax[0].axhline(y_dash_line, ls='--', lw=0.8, color='k')
+    ax[1].axhline(y_dash_line, ls='--', lw=0.8, color='k')
+    ax[1].axhline(mean, ls='--', lw=2, color='blue')
+    ax[1].axhline(median, ls='--', lw=2, color='green')
+
+    # norm_test = normaltest(data[parameter].values,nan_policy='omit')
+    # norm_test_str = "p > 0.05" if norm_test[1] > 0.05 else "p < 0.05"
+    # ax[1].annotate(norm_test_str,xy=(0.1,0.9),xycoords='axes fraction')
+
+    ax[0].set_title(f"{parameter}", weight='bold',fontsize=16);
+
+    plt.show()
