@@ -82,7 +82,7 @@ def filter_data(data,
                 range_check=True,
                 range_check_climate=True,
                 t_continuity_check=True,
-                range_axys_limits=None,
+                range_check_climate_limits=None,
                 continuity_axys_limits=None,
                 range_check_climate_message=True):
 
@@ -93,8 +93,8 @@ def filter_data(data,
     variables = buoy_df.columns.to_list()
 
 
-    if range_axys_limits:
-        climate_limits = range_axys_limits
+    if range_check_climate_limits:
+        climate_limits = range_check_climate_limits
     else:
         climate_limits = limits['climate_axys_limits']
 
@@ -278,14 +278,25 @@ def plot_hist(data,
 
 
 
-def plot_comparison(data, buoy, parameter, limits,factor1=3, factor2=6, message_ignore=False):
+def plot_comparison(data,
+                    buoy,
+                    parameter,
+                    limits,
+                    manual_limits,
+                    factor1=3,
+                    factor2=6,
+                    message_ignore=False):
 
-    # FACTOR 1
+    if manual_limits:
+        climate_limits_list = manual_limits
+    else:
     # Generated lims
-    out_lims_df_1 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor1)
-
-    # Generate lims dict
-    out_lims_dict_1 = manual_outlier_lims(buoy,out_lims_df_1)
+        out_lims_df_1 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor1)
+        out_lims_dict_1 = manual_outlier_lims(buoy,out_lims_df_1)
+        out_lims_df_2 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor2)
+        out_lims_dict_2 = manual_outlier_lims(buoy,out_lims_df_2)
+        climate_limits_list = [out_lims_dict_1,out_lims_dict_2]
+    # FACTOR 1
 
     # filter data with
     data_filter1 = filter_data(data=data,
@@ -294,20 +305,18 @@ def plot_comparison(data, buoy, parameter, limits,factor1=3, factor2=6, message_
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        range_axys_limits=out_lims_dict_1,
+                        range_check_climate_limits=climate_limits_list[0],
                         range_check_climate_message=message_ignore)
 
+
+
     # Get limits values for axhline plot
-    lower_lim_1 = out_lims_df_1.loc[parameter].loc['lower_lim']
-    upper_lim_1 = out_lims_df_1.loc[parameter].loc['upper_lim']
+    lower_lim_1 = manual_limits[0][parameter][0]
+    upper_lim_1 = manual_limits[0][parameter][1]
 
 
     # FACTOR 1
-    # Generated lims
-    out_lims_df_2 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor2)
 
-    # Generate lims dict
-    out_lims_dict_2 = manual_outlier_lims(buoy,out_lims_df_2)
 
     # filter data with
     data_filter2 = filter_data(data=data,
@@ -316,13 +325,12 @@ def plot_comparison(data, buoy, parameter, limits,factor1=3, factor2=6, message_
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        range_axys_limits=out_lims_dict_2,
+                        range_check_climate_limits=climate_limits_list[1],
                         range_check_climate_message=message_ignore)
 
     # Get limits values for axhline plot
-    lower_lim_2 = out_lims_df_2.loc[parameter].loc['lower_lim']
-    upper_lim_2 = out_lims_df_2.loc[parameter].loc['upper_lim']
-
+    lower_lim_2 = manual_limits[1][parameter][0]
+    upper_lim_2 = manual_limits[1][parameter][1]
 
     # PLOT
     fig, ax = plt.subplots(1,3,sharey=True,figsize=(20,4),gridspec_kw={'width_ratios': [3, 3, 0.4]})
@@ -341,23 +349,23 @@ def plot_comparison(data, buoy, parameter, limits,factor1=3, factor2=6, message_
     ax[1].axhline(upper_lim_2, ls='dashed', color='blue', lw=1.5)
 
     # Histogram
-    mean = data[parameter].mean()
-    median = data[parameter].median()
+    # mean = data[parameter].mean()
+    # median = data[parameter].median()
     skew_test = skew(data[parameter], nan_policy='omit')
 
     ax[2].hist(data[parameter], color='lightcoral',bins=50, orientation='horizontal',alpha=0.8);
     ymin, ymax = ax[2].get_ylim()
 
-    y_dash_line = ymin + (ymax-ymin)/2
-    ax[2].axhline(y_dash_line, ls='--', lw=0.8, color='k')
-    ax[2].axhline(mean, ls='--', lw=2, color='blue')
-    ax[2].axhline(median, ls='--', lw=2, color='green')
+    # y_dash_line = ymin + (ymax-ymin)/2
+    # ax[2].axhline(y_dash_line, ls='--', lw=0.8, color='k')
+    # ax[2].axhline(mean, ls='--', lw=2, color='blue')
+    # ax[2].axhline(median, ls='--', lw=2, color='green')
 
     skew_test_str = f"Sk = {skew_test.round(3)}"
     ax[2].annotate(skew_test_str,xy=(0.1,0.9),xycoords='axes fraction')
 
     # FIGURE LAYOUT
-    fig.text(0.13, 1.01, f"{parameter}", weight='bold', fontsize=15, ha='center')
+    fig.text(0.12, 1.01, f"{parameter}", weight='bold', fontsize=15)
     ax[0].set_title(f"STD factor = {factor1}", weight='bold', fontsize=12)
     ax[1].set_title(f"STD factor = {factor2}", weight='bold', fontsize=12)
 
