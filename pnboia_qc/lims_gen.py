@@ -262,15 +262,18 @@ def plot_hist(data,
     # y_dash_line = ymin + (ymax-ymin)/2
     # ax[0].axhline(y_dash_line, ls='--', lw=0.8, color='k')
     # ax[1].axhline(y_dash_line, ls='--', lw=0.8, color='k')
-    ax[1].axhline(mean, ls='--', lw=2, color='blue')
-    ax[1].axhline(median, ls='--', lw=2, color='green')
+    ax[1].axhline(mean, ls='--', lw=2, color='blue', label='mean')
+    ax[1].axhline(median, ls='--', lw=2, color='green', label='median')
 
     # norm_test = normaltest(data[parameter].values,nan_policy='omit')
     # norm_test_str = "p > 0.05" if norm_test[1] > 0.05 else "p < 0.05"
     # ax[1].annotate(norm_test_str,xy=(0.1,0.9),xycoords='axes fraction')
 
     skew_test_str = f"Sk = {skew_test.round(3)}"
-    ax[1].annotate(skew_test_str,xy=(0.1,0.9),xycoords='axes fraction')
+    # ax[1].annotate(skew_test_str,xy=(0.1,0.9),xycoords='axes fraction')
+    ax[1].set_title(skew_test_str,fontsize=10)
+
+    ax[1].legend()
 
     ax[0].set_title(f"{parameter}", weight='bold',fontsize=15);
 
