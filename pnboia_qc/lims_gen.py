@@ -84,7 +84,7 @@ def filter_data(data,
                 t_continuity_check=True,
                 range_check_climate_limits=None,
                 continuity_axys_limits=None,
-                range_check_climate_message=True):
+                range_check_climate_message_ignore=False):
 
     if isinstance(data.index, pd.MultiIndex):
         buoy_df = data.loc[buoy]
@@ -130,7 +130,7 @@ def filter_data(data,
     if range_check_climate:
         for parameter in climate_limits.keys():
             qc.range_check_climate(parameter=parameter)
-        if range_check_climate_message:
+        if not range_check_climate_message_ignore:
             print('range_check_climate done.')
 
     # # Comparison between swvht and mxwvht
@@ -282,10 +282,10 @@ def plot_comparison(data,
                     buoy,
                     parameter,
                     limits,
-                    manual_limits,
+                    manual_limits=None,
                     factor1=3,
                     factor2=6,
-                    message_ignore=False):
+                    message_ignore=True):
 
     if manual_limits:
         climate_limits_list = manual_limits
@@ -306,13 +306,13 @@ def plot_comparison(data,
                         range_check=False,
                         t_continuity_check=False,
                         range_check_climate_limits=climate_limits_list[0],
-                        range_check_climate_message=message_ignore)
+                        range_check_climate_message_ignore=message_ignore)
 
 
 
     # Get limits values for axhline plot
-    lower_lim_1 = manual_limits[0][parameter][0]
-    upper_lim_1 = manual_limits[0][parameter][1]
+    lower_lim_1 = climate_limits_list[0][parameter][0]
+    upper_lim_1 = climate_limits_list[0][parameter][1]
 
 
     # FACTOR 1
@@ -326,11 +326,11 @@ def plot_comparison(data,
                         range_check=False,
                         t_continuity_check=False,
                         range_check_climate_limits=climate_limits_list[1],
-                        range_check_climate_message=message_ignore)
+                        range_check_climate_message_ignore=message_ignore)
 
     # Get limits values for axhline plot
-    lower_lim_2 = manual_limits[1][parameter][0]
-    upper_lim_2 = manual_limits[1][parameter][1]
+    lower_lim_2 = climate_limits_list[1][parameter][0]
+    upper_lim_2 = climate_limits_list[1][parameter][1]
 
     # PLOT
     fig, ax = plt.subplots(1,3,sharey=True,figsize=(20,4),gridspec_kw={'width_ratios': [3, 3, 0.4]})
@@ -361,7 +361,7 @@ def plot_comparison(data,
     # ax[2].axhline(mean, ls='--', lw=2, color='blue')
     # ax[2].axhline(median, ls='--', lw=2, color='green')
 
-    skew_test_str = f"Sk = {skew_test.round(3)}"
+    skew_test_str = f"Sk = {np.round(skew_test,3)}"
     ax[2].annotate(skew_test_str,xy=(0.1,0.9),xycoords='axes fraction')
 
     # FIGURE LAYOUT
