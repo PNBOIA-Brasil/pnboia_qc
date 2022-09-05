@@ -1,3 +1,12 @@
+"""
+To do:
+
+- Implement dictionary of factors for each parameter in "gen_outlier_lim"
+
+
+"""
+
+
 import pandas as pd
 import numpy as np
 from pnboia_qc.qc_checks import QCChecks
@@ -10,7 +19,11 @@ from scipy.stats import skew
 
 def gen_outlier_lim(data,buoy_name=None,std_factor=3.):
     # drop unwanted parameters
-    data = data.drop(columns='battery')
+    try:
+        data = data.drop(columns='battery')
+    except:
+        pass
+
     # get buoys names
     if isinstance(data.index, pd.MultiIndex):
         buoys = data.index.levels[0]
@@ -75,16 +88,16 @@ def gen_cont_lims(data,std_factor=3.):
 
 
 def filter_data(data,
-                buoy,
                 limits,
+                buoy=None,
                 save_df=False,
                 mis_value_check=True,
                 range_check=True,
-                range_check_climate=True,
+                outlier_check=True,
                 t_continuity_check=True,
-                range_check_climate_limits=None,
+                outlier_limits=None,
                 continuity_axys_limits=None,
-                range_check_climate_message_ignore=False):
+                outlier_check_message_ignore=False):
 
     if isinstance(data.index, pd.MultiIndex):
         buoy_df = data.loc[buoy]
@@ -92,46 +105,43 @@ def filter_data(data,
         buoy_df = data
     variables = buoy_df.columns.to_list()
 
-
-    if range_check_climate_limits:
-        climate_limits = range_check_climate_limits
-    else:
-        climate_limits = limits['climate_axys_limits']
+    if not outlier_limits:
+        outlier_limits = limits['outlier_limits']
 
     if continuity_axys_limits:
         continuity_limit = continuity_axys_limits
     else:
-        continuity_limit = limits['continuity_axys_limits']
+        continuity_limit = limits['continuity_limits']
 
     qc = QCChecks(data=buoy_df,
         variables=variables,
-        mis_values=limits['mis_value_axys_limits'],
-        limits=limits['range_axys_limits'],
-        climate_limits=climate_limits,
-        stuck_limit=limits['stuck_axys_limits'],
-        sigma_values=limits['sigma_axys_limits'],
+        mis_values=limits['mis_value_limits'],
+        limits=limits['range_limits'],
+        climate_limits=outlier_limits,
+        stuck_limit=limits['stuck_limits'],
+        sigma_values=limits['sigma_limits'],
         continuity_limit=continuity_limit,
         height=limits['height']
         )
 
     # Missvalue test
     if mis_value_check:
-        for parameter in limits['mis_value_axys_limits'].keys():
+        for parameter in limits['mis_value_limits'].keys():
             qc.mis_value_check(parameter=parameter)
         print('mis_value_check done.')
 
     # Range test
     if range_check:
-        for parameter in limits['range_axys_limits'].keys():
+        for parameter in limits['range_limits'].keys():
             qc.range_check(parameter=parameter)
         print('range_check done.')
 
     # Climate range test
-    if range_check_climate:
-        for parameter in climate_limits.keys():
+    if outlier_check:
+        for parameter in outlier_limits.keys():
             qc.range_check_climate(parameter=parameter)
-        if not range_check_climate_message_ignore:
-            print('range_check_climate done.')
+        if not outlier_check_message_ignore:
+            print('outlier_check done.')
 
     # # Comparison between swvht and mxwvht
     # qc.swvht_mxwvht_check(swvht_name = 'swvht', mxwvht_name = 'mxwvht')
@@ -308,8 +318,8 @@ def plot_comparison(data,
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        range_check_climate_limits=climate_limits_list[0],
-                        range_check_climate_message_ignore=message_ignore)
+                        outlier_limits=climate_limits_list[0],
+                        outlier_check_message_ignore=message_ignore)
 
 
 
@@ -328,8 +338,8 @@ def plot_comparison(data,
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        range_check_climate_limits=climate_limits_list[1],
-                        range_check_climate_message_ignore=message_ignore)
+                        outlier_limits=climate_limits_list[1],
+                        outlier_check_message_ignore=message_ignore)
 
     # Get limits values for axhline plot
     lower_lim_2 = climate_limits_list[1][parameter][0]
