@@ -17,6 +17,51 @@ import plotly.graph_objs as go
 from scipy.stats import skew
 
 
+# def gen_outlier_lim(data,buoy_name=None,std_factor=3.):
+#     # drop unwanted parameters
+#     try:
+#         data = data.drop(columns='battery')
+#     except:
+#         pass
+
+#     # get buoys names
+#     if isinstance(data.index, pd.MultiIndex):
+#         buoys = data.index.levels[0]
+#         # generate global df
+#         lims = pd.DataFrame(columns=['buoy','param','mean','std','lower_lim','upper_lim'])
+
+#         # generate limits for each buoy and concatenate to the global dataframe
+#         for buoy in buoys:
+#             res = data.loc[buoy].dropna(how='all',axis=1).describe().loc[['mean','std']].T
+#             res.index.names = ['param']
+#             res.reset_index(inplace=True)
+#             res['lower_lim'] = res['mean'] - res['std']*std_factor
+#             res['upper_lim'] = res['mean'] + res['std']*std_factor
+#             res['buoy'] = buoy
+#             lims = pd.concat([lims,res])
+
+#         # param_names = {'wspd':'wspd1','gust':'gust1'}
+#         # lims['param'] = lims['param'].replace(param_names)
+#         lims.set_index(['buoy','param'],inplace=True)
+
+#     else:
+#         # generate global df
+#         lims = pd.DataFrame(columns=['param','mean','std','lower_lim','upper_lim'])
+
+#         res = data.dropna(how='all',axis=1).describe().loc[['mean','std']].T
+#         res.index.names = ['param']
+#         res.reset_index(inplace=True)
+#         res['lower_lim'] = res['mean'] - res['std']*std_factor
+#         res['upper_lim'] = res['mean'] + res['std']*std_factor
+#         lims = pd.concat([lims,res])
+#         lims.set_index('param',inplace=True)
+
+
+#     # replace negative lower_limits with 0.
+#     lims.loc[lims['lower_lim'] < 0,'lower_lim'] = 0.
+
+#     return lims
+
 def gen_outlier_lim(data,buoy_name=None,std_factor=3.):
     # drop unwanted parameters
     try:
@@ -35,8 +80,15 @@ def gen_outlier_lim(data,buoy_name=None,std_factor=3.):
             res = data.loc[buoy].dropna(how='all',axis=1).describe().loc[['mean','std']].T
             res.index.names = ['param']
             res.reset_index(inplace=True)
-            res['lower_lim'] = res['mean'] - res['std']*std_factor
-            res['upper_lim'] = res['mean'] + res['std']*std_factor
+
+            if type(std_factor) is dict:
+                res['factor'] = res['param'].map(std_factor)
+            else:
+                res['factor'] = std_factor
+
+            res['std*factor'] = res['std'] * res['factor']
+            res['lower_lim'] = res['mean'] - res['std*factor']
+            res['upper_lim'] = res['mean'] + res['std*factor']
             res['buoy'] = buoy
             lims = pd.concat([lims,res])
 
@@ -51,11 +103,20 @@ def gen_outlier_lim(data,buoy_name=None,std_factor=3.):
         res = data.dropna(how='all',axis=1).describe().loc[['mean','std']].T
         res.index.names = ['param']
         res.reset_index(inplace=True)
-        res['lower_lim'] = res['mean'] - res['std']*std_factor
-        res['upper_lim'] = res['mean'] + res['std']*std_factor
+
+        if type(std_factor) is dict:
+            res['factor'] = res['param'].map(std_factor)
+        else:
+            res['factor'] = std_factor
+
+        res['std*factor'] = res['std'] * res['factor']
+        res['lower_lim'] = res['mean'] - res['std*factor']
+        res['upper_lim'] = res['mean'] + res['std*factor']
         lims = pd.concat([lims,res])
         lims.set_index('param',inplace=True)
 
+        lims = lims[['mean', 'std', 'factor',
+                        'std*factor','lower_lim', 'upper_lim']]
 
     # replace negative lower_limits with 0.
     lims.loc[lims['lower_lim'] < 0,'lower_lim'] = 0.
@@ -197,11 +258,11 @@ def filter_data(data,
 
 
 
-def manual_outlier_lims(buoy,limits_df):
+def manual_outlier_lims(limits_df, buoy_name=None):
 
     if isinstance(limits_df.index, pd.MultiIndex):
-        lims_values = limits_df.loc[buoy,['lower_lim','upper_lim']].values.tolist()
-        keys = limits_df.loc[buoy,['lower_lim','upper_lim']].index
+        lims_values = limits_df.loc[buoy_name,['lower_lim','upper_lim']].values.tolist()
+        keys = limits_df.loc[buoy_name,['lower_lim','upper_lim']].index
     else:
         lims_values = limits_df.loc[:,['lower_lim','upper_lim']].values.tolist()
         keys = limits_df.loc[:,['lower_lim','upper_lim']].index
