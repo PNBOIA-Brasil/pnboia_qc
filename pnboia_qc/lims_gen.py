@@ -158,7 +158,8 @@ def filter_data(data,
                 t_continuity_check=True,
                 outlier_limits=None,
                 continuity_axys_limits=None,
-                outlier_check_message_ignore=False):
+                outlier_check_message_ignore=False,
+                return_flags=False):
 
     if isinstance(data.index, pd.MultiIndex):
         buoy_df = data.loc[buoy]
@@ -244,17 +245,21 @@ def filter_data(data,
     # qc.front_except_check6(wspd_name='wspd', swvht_name='swvht')
 
     def filter_data_dataframe(qc_object):
-        filtered_bad_data = pd.DataFrame(index=qc_object.data.index,columns=qc_object.data.columns)
+        filtered_data = pd.DataFrame(index=qc_object.data.index, columns=qc_object.data.columns)
         bool_array_2 = np.logical_and(qc_object.flag>0, qc_object.flag<100)
-        filtered_bad_data = qc_object.data[~bool_array_2]
+        filtered_data = qc_object.data[~bool_array_2]
 
-        return filtered_bad_data
+        return filtered_data
+
 
     filtered_data = filter_data_dataframe(qc)
     if save_df:
         filtered_data.to_csv(f'{buoy}_filtered.csv')
 
-    return filtered_data
+    if return_flags:
+        return filtered_data, qc.flag
+    else:
+        return filtered_data
 
 
 
@@ -327,7 +332,7 @@ def plot_hist(data,
     plt.subplots_adjust(wspace=0.03)
 
     data[parameter].plot(ls='None', marker='.', color=color, grid=False, ax=ax[0])
-    ax[1].hist(data[parameter], color=color,bins=50, orientation='horizontal',alpha=0.8);
+    ax[1].hist(data[parameter], color=color,bins=50, orientation='horizontal',alpha=0.8)
 
     # ymin, ymax = ax[1].get_ylim()
     # y_dash_line = ymin + (ymax-ymin)/2
@@ -362,49 +367,51 @@ def plot_comparison(data,
                     message_ignore=True):
 
     if manual_limits:
-        climate_limits_list = manual_limits
+        outlier_limits_list = manual_limits
     else:
     # Generated lims
         out_lims_df_1 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor1)
-        out_lims_dict_1 = manual_outlier_lims(buoy,out_lims_df_1)
+        out_lims_dict_1 = manual_outlier_lims(out_lims_df_1, buoy_name=buoy)
         out_lims_df_2 = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor2)
-        out_lims_dict_2 = manual_outlier_lims(buoy,out_lims_df_2)
-        climate_limits_list = [out_lims_dict_1,out_lims_dict_2]
+        out_lims_dict_2 = manual_outlier_lims(out_lims_df_2, buoy_name=buoy)
+        outlier_limits_list = [out_lims_dict_1,out_lims_dict_2]
     # FACTOR 1
 
     # filter data with
-    data_filter1 = filter_data(data=data,
+    data_filter1, data_filter_1_flags = filter_data(data=data,
                         buoy=buoy,
                         limits=limits,
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        outlier_limits=climate_limits_list[0],
-                        outlier_check_message_ignore=message_ignore)
+                        outlier_limits=outlier_limits_list[0],
+                        outlier_check_message_ignore=message_ignore,
+                        return_flags=True)
 
 
 
     # Get limits values for axhline plot
-    lower_lim_1 = climate_limits_list[0][parameter][0]
-    upper_lim_1 = climate_limits_list[0][parameter][1]
+    lower_lim_1 = outlier_limits_list[0][parameter][0]
+    upper_lim_1 = outlier_limits_list[0][parameter][1]
 
 
     # FACTOR 1
 
 
     # filter data with
-    data_filter2 = filter_data(data=data,
+    data_filter2, data_filter_2_flags = filter_data(data=data,
                         buoy=buoy,
                         limits=limits,
                         mis_value_check=False,
                         range_check=False,
                         t_continuity_check=False,
-                        outlier_limits=climate_limits_list[1],
-                        outlier_check_message_ignore=message_ignore)
+                        outlier_limits=outlier_limits_list[1],
+                        outlier_check_message_ignore=message_ignore,
+                        return_flags=True)
 
     # Get limits values for axhline plot
-    lower_lim_2 = climate_limits_list[1][parameter][0]
-    upper_lim_2 = climate_limits_list[1][parameter][1]
+    lower_lim_2 = outlier_limits_list[1][parameter][0]
+    upper_lim_2 = outlier_limits_list[1][parameter][1]
 
     # PLOT
     fig, ax = plt.subplots(1,3,sharey=True,figsize=(20,4),gridspec_kw={'width_ratios': [3, 3, 0.4]})
@@ -415,6 +422,8 @@ def plot_comparison(data,
     data_filter1[parameter].plot(color='green',marker='.',linestyle='none',ms=4,grid=True,ax=ax[0], label='Filterd');
     ax[0].axhline(lower_lim_1, ls='dashed', lw=1.5, color='blue', label='Lower Limit')
     ax[0].axhline(upper_lim_1, ls='dashed', lw=1.5, color='blue', label='Upper Limit')
+
+    # ax[0].annotate(f"Points removed: {flag_count1}",xy=(0.1,0.9),xycoords='axes fraction')
 
     # factor 2
     data[parameter].plot(color='lightcoral',marker='.',linestyle='none',ms=4,grid=True,ax=ax[1], label='Raw');
@@ -428,8 +437,8 @@ def plot_comparison(data,
     skew_test = skew(data[parameter], nan_policy='omit')
 
     ax[2].hist(data[parameter], color='lightcoral',bins=50, orientation='horizontal',alpha=0.8);
-    ymin, ymax = ax[2].get_ylim()
 
+    # ymin, ymax = ax[2].get_ylim()
     # y_dash_line = ymin + (ymax-ymin)/2
     # ax[2].axhline(y_dash_line, ls='--', lw=0.8, color='k')
     # ax[2].axhline(mean, ls='--', lw=2, color='blue')
@@ -440,8 +449,99 @@ def plot_comparison(data,
 
     # FIGURE LAYOUT
     fig.text(0.12, 1.01, f"{parameter}", weight='bold', fontsize=15)
-    ax[0].set_title(f"STD factor = {factor1}", weight='bold', fontsize=12)
-    ax[1].set_title(f"STD factor = {factor2}", weight='bold', fontsize=12)
+
+    try:
+        flag_count1 = data_filter_1_flags[parameter].value_counts().loc[9] # 9 is the flag related to the outlier test
+    except:
+        flag_count1 = 0
+    try:
+        flag_count2 = data_filter_2_flags[parameter].value_counts().loc[9]
+    except:
+        flag_count2 = 0
+
+    title1_str = f"STD factor = {factor1} - Points removed: {flag_count1} / {data[parameter].dropna().count()}"
+    title2_str = f"STD factor = {factor2} - Points removed: {flag_count2} / {data[parameter].dropna().count()}"
+
+    ax[0].set_title(title1_str, weight='bold', fontsize=12)
+    ax[1].set_title(title2_str, weight='bold', fontsize=12)
+
+    from matplotlib.lines import Line2D
+
+    legend_handles = [Line2D([0], [0], color='lightcoral', ls='none', marker='.', label='Raw'),
+                        Line2D([0], [0], color='green', ls='none', marker='.', label='Filtered'),
+                        Line2D([0], [0], color='blue', lw=1.5, ls='dashed', label='Limits'),]
+    ax[0].legend(handles=legend_handles, ncol=len(legend_handles))
+
+
+
+def plot_filtering(data,
+                    buoy,
+                    parameter,
+                    limits,
+                    factor=3,
+                    message_ignore=True):
+
+
+    out_lims_df = gen_outlier_lim(data,buoy_name=buoy,std_factor=factor)
+    out_lims_dict = manual_outlier_lims(out_lims_df, buoy_name=buoy)
+    outlier_limits = out_lims_dict
+    # FACTOR 1
+
+    # filter data with
+    data_filter1, data_filter_1_flags = filter_data(data=data,
+                        buoy=buoy,
+                        limits=limits,
+                        mis_value_check=False,
+                        range_check=False,
+                        t_continuity_check=False,
+                        outlier_limits=outlier_limits,
+                        outlier_check_message_ignore=message_ignore,
+                        return_flags=True)
+
+
+    # Get limits values for axhline plot
+    lower_lim_1 = outlier_limits[parameter][0]
+    upper_lim_1 = outlier_limits[parameter][1]
+
+
+    # PLOT
+    fig, ax = plt.subplots(1,2,sharey=True,figsize=(13,4),gridspec_kw={'width_ratios': [3, 0.4]})
+    plt.subplots_adjust(wspace=0.03)
+
+    # factor 1
+    data[parameter].plot(color='lightcoral', marker='.', linestyle='none', ms=4, grid=True, ax=ax[0], label='Raw');
+    data_filter1[parameter].plot(color='green',marker='.',linestyle='none',ms=4,grid=True,ax=ax[0], label='Filterd');
+    ax[0].axhline(lower_lim_1, ls='dashed', lw=1.5, color='blue', label='Lower Limit')
+    ax[0].axhline(upper_lim_1, ls='dashed', lw=1.5, color='blue', label='Upper Limit')
+
+
+    # Histogram
+    # mean = data[parameter].mean()
+    # median = data[parameter].median()
+    skew_test = skew(data[parameter], nan_policy='omit')
+
+    ax[1].hist(data[parameter], color='lightcoral',bins=50, orientation='horizontal',alpha=0.8);
+
+    # ymin, ymax = ax[1].get_ylim()
+    # y_dash_line = ymin + (ymax-ymin)/2
+    # ax[2].axhline(y_dash_line, ls='--', lw=0.8, color='k')
+    # ax[2].axhline(mean, ls='--', lw=2, color='blue')
+    # ax[2].axhline(median, ls='--', lw=2, color='green')
+    skew_test_str = f"Sk = {np.round(skew_test,3)}"
+    ax[1].annotate(skew_test_str,xy=(0.1,0.9),xycoords='axes fraction')
+
+    # FIGURE LAYOUT
+    fig.text(0.12, 1.01, f"{parameter}", weight='bold', fontsize=15)
+
+
+    try:
+        flag_count1 = data_filter_1_flags[parameter].value_counts().loc[9] # 9 is the flag related to the outlier test
+    except:
+        flag_count1 = 0
+
+    title1_str = f"STD factor = {out_lims_df.loc[parameter,'factor']} - Points removed: {flag_count1} / {data[parameter].dropna().count()}"
+
+    ax[0].set_title(title1_str, weight='bold', fontsize=12)
 
     from matplotlib.lines import Line2D
 
