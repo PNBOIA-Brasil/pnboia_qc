@@ -402,10 +402,8 @@ class QCChecks():
                 delta_times_backward = np.array((value.index - value.index[-1]).total_seconds())/3600
                 times = np.array(value.index)
                 for i in range(len(delta_times_forward) - 1):
-                    print((0.58 * sigma * (np.sqrt(delta_times_forward[i + 1]))))
                     if (0.58 * sigma * (np.sqrt(delta_times_forward[i + 1]))) < forward_values[i + 1]:
                         self.flag.loc[(times[i]), "tmp_forward"] = 1
-                    print(0.58 * sigma * (np.sqrt(-delta_times_backward[i])))
                     if (0.58 * sigma * (np.sqrt(-delta_times_backward[i]))) < backward_values[i]:
                         self.flag.loc[(times[i]), "tmp_backward"] = 1
 
