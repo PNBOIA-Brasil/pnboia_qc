@@ -389,8 +389,6 @@ class QCChecks():
         if continuity_limit == None:
             continuity_limit = self.continuity_limit
 
-        print(f'sigma = {sigma}')
-        print(f'continuity limit = {continuity_limit}')
 
         self.flag['tmp_forward'] = 0
         self.flag['tmp_backward'] = 0
@@ -398,26 +396,16 @@ class QCChecks():
         for counter in range(len(self.data)):
             value = self.data.loc[(self.data.index >= self.data.index[counter]) & (self.data.index <= self.data.index[counter] + pd.to_timedelta(continuity_limit, unit='h')) & (self.flag[parameter] == 0), parameter]
             if value.size > 1:
-                print(f"value = {value}")
                 forward_values = np.array(value - value[0])
                 backward_values = np.array(value - value[-1])
-                delta_times_forward = np.array(value.index - value.index[0])/(10**9)/3600
-                delta_times_backward = np.array(value.index - value.index[-1])/(10**9)/3600
-                print(f"delta_times = {delta_times_forward}")
+                delta_times_forward =  np.array((value.index - value.index[0]).total_seconds())/3600
+                delta_times_backward = np.array((value.index - value.index[-1]).total_seconds())/3600
                 times = np.array(value.index)
                 for i in range(len(delta_times_forward) - 1):
-                    print('calculate')
-                    print(0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1]))))
-                    print(forward_values[i + 1])
-                    if (0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1])))) < abs(forward_values[i + 1]):
+                    if (0.58 * sigma * (np.sqrt(delta_times_forward[i + 1]))) < forward_values[i + 1]:
                         self.flag.loc[(times[i]), "tmp_forward"] = 1
-                        print('bad')
-                    print('calculate2')
-                    print(0.58 * sigma * (np.sqrt(int(-delta_times_backward[i]))))
-                    print(backward_values[i])
-                    if (0.58 * sigma * (np.sqrt(int(-delta_times_backward[i])))) < abs(backward_values[i]):
+                    if (0.58 * sigma * (np.sqrt(-delta_times_backward[i]))) < backward_values[i]:
                         self.flag.loc[(times[i]), "tmp_backward"] = 1
-                        print('bad')
 
         self.flag.loc[(self.flag["tmp_backward"] == 1) | (self.flag["tmp_forward"] == 1), parameter] = 8
 
