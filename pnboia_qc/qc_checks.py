@@ -403,7 +403,7 @@ class QCChecks():
                 backward_values = np.array(value - value[-1])
                 delta_times_forward = np.array(value.index - value.index[0])/(10**9)/3600
                 delta_times_backward = np.array(value.index - value.index[-1])/(10**9)/3600
-                print(f"delta_times = {delta_times_forward[i + 1]}")
+                print(f"delta_times = {delta_times_forward}")
                 times = np.array(value.index)
                 for i in range(len(delta_times_forward) - 1):
                     print('calculate')
