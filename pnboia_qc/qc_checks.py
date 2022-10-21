@@ -407,10 +407,15 @@ class QCChecks():
                     print('calculate')
                     print(0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1]))))
                     print(forward_values[i + 1])
-                    if (0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1])))) < forward_values[i + 1]:
+                    if (0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1])))) < abs(forward_values[i + 1]):
                         self.flag.loc[(times[i]), "tmp_forward"] = 1
-                    if (0.58 * sigma * (np.sqrt(int(-delta_times_backward[i])))) < backward_values[i]:
+                        print('bad')
+                    print('calculate2')
+                    print(0.58 * sigma * (np.sqrt(int(delta_times_forward[i]))))
+                    print(backward_values[i])
+                    if (0.58 * sigma * (np.sqrt(int(-delta_times_backward[i])))) < abs(backward_values[i]):
                         self.flag.loc[(times[i]), "tmp_backward"] = 1
+                        print('bad')
 
         self.flag.loc[(self.flag["tmp_backward"] == 1) | (self.flag["tmp_forward"] == 1), parameter] = 8
 
