@@ -389,8 +389,8 @@ class QCChecks():
         if continuity_limit == None:
             continuity_limit = self.continuity_limit
 
-        print(f'sigma = {sigma')
-        print(f'continuity limit = {continuity_limit')
+        print(f'sigma = {sigma}')
+        print(f'continuity limit = {continuity_limit}')
 
         self.flag['tmp_forward'] = 0
         self.flag['tmp_backward'] = 0
