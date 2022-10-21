@@ -389,6 +389,8 @@ class QCChecks():
         if continuity_limit == None:
             continuity_limit = self.continuity_limit
 
+        print(f'sigma = {sigma')
+        print(f'continuity limit = {continuity_limit')
 
         self.flag['tmp_forward'] = 0
         self.flag['tmp_backward'] = 0
@@ -402,6 +404,9 @@ class QCChecks():
                 delta_times_backward = np.array(value.index - value.index[-1])/(10**9)/3600
                 times = np.array(value.index)
                 for i in range(len(delta_times_forward) - 1):
+                    print('calculate')
+                    print(0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1]))))
+                    print(forward_values[i + 1])
                     if (0.58 * sigma * (np.sqrt(int(delta_times_forward[i + 1])))) < forward_values[i + 1]:
                         self.flag.loc[(times[i]), "tmp_forward"] = 1
                     if (0.58 * sigma * (np.sqrt(int(-delta_times_backward[i])))) < backward_values[i]:
@@ -723,22 +728,25 @@ class QCChecks():
                         self.t_continuity(parameter=parameter,
                                         sigma=self.qc_config[func_value]['sigma'][idx],
                                         continuity_limit=self.qc_config[func_value]['limits'])
-                    front_excepts = self.qc_config[func_value]['exceptions']
-                    if front_excepts:
-                        print('-------------')
-                        for front_except in front_excepts:
-                            if front_except['test'] == 1:
-                                print(f'Check {func_value}: exception 1')
-                                self.front_except1(wdir_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
-                            elif front_except['test'] == 3:
-                                print(f'Check {func_value}: exception 3')
-                                self.front_except3(wspd_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
-                            elif front_except['test'] == 4:
-                                print(f'Check {func_value}: exception 4')
-                                self.front_except4(pres_name=front_except['parameters'][0], wspd_name=front_except['parameters'][0])
-                            elif front_except['test'] == 5:
-                                print(f'Check {func_value}: exception 5')
-                                self.front_except5(pres_name=front_except['parameters'])
-                            elif front_except['test'] == 6:
-                                print(f'Check {func_value}: exception 6')
-                                self.front_except6(wspd_name=front_except['parameters'][0], swvht_name=front_except['parameters'][0])
+                    try:
+                        front_excepts = self.qc_config[func_value]['exceptions']
+                        if front_excepts:
+                            print('-------------')
+                            for front_except in front_excepts:
+                                if front_except['test'] == 1:
+                                    print(f'Check {func_value}: exception 1')
+                                    self.front_except1(wdir_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
+                                elif front_except['test'] == 3:
+                                    print(f'Check {func_value}: exception 3')
+                                    self.front_except3(wspd_name=front_except['parameters'][0], atmp_name=front_except['parameters'][0])
+                                elif front_except['test'] == 4:
+                                    print(f'Check {func_value}: exception 4')
+                                    self.front_except4(pres_name=front_except['parameters'][0], wspd_name=front_except['parameters'][0])
+                                elif front_except['test'] == 5:
+                                    print(f'Check {func_value}: exception 5')
+                                    self.front_except5(pres_name=front_except['parameters'])
+                                elif front_except['test'] == 6:
+                                    print(f'Check {func_value}: exception 6')
+                                    self.front_except6(wspd_name=front_except['parameters'][0], swvht_name=front_except['parameters'][0])
+                    except:
+                        continue
