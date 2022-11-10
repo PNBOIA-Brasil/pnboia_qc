@@ -1,8 +1,6 @@
 """
 Python Version tested: Python 3 or greater
 
-Required Dependencies: Numpy, time, math, pandas
-
 Description: This module is designed to QC data colected by Fixed Station
 (buoys, weather station). QC is based on "Manual de Controle de Qualidade de Dados
 do PNBOIA". Each check generates a flag number. Depending the number of the flag,
@@ -17,7 +15,6 @@ Author: Tobias Ferreira
 Organization: Brazilian Navy, BR
 Date: August 19th 2020
 Version: 1.0
-
 """
 
 import pandas as pd
@@ -30,6 +27,21 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 class QCChecks():
+    """
+    Class that contains all the quality control process.
+
+    Variables:
+    data:pd.DataFrame -> dataframe that has an index as datetime and variables in each column,
+    variables:list -> list of variables that represents the data that will be QC. Ex.: ['wspd', 'tp']
+    mis_values:dict=None -> dictionary for missing values for each variable. Ex: {'wspd': [-9999, np.nan], 'tp': [-9999]}
+    limits:dict=None -> dictionary for sensors limits. If the sst sensor collect data between 0-40°C, the limits will {'sst': [0, 39]}
+    fine_limits:dict=None -> dictionary for outlier limit.
+    stuck_limit:int=None -> number of allowed repititive values
+    sigma_values:dict=None -> dictionary of sigma values for each continuity limit
+    continuity_limit:int=None -> number in hours that will be compared for time continuity value
+    height:dict=None -> height of the anemometer below the see surface
+    qc_config:dict=None -> configuration parameter that sumarizes all the quality control process
+    """
 
     def __init__(self,
         data:pd.DataFrame,
@@ -72,6 +84,24 @@ class QCChecks():
                         plot_type='matplotlib',
                         start_date=None,
                         end_date=None):
+
+
+        """
+        Class that contains all the quality control process.
+
+        Variables:
+        data:pd.DataFrame -> dataframe that has an index as datetime and variables in each column,
+        variables:list -> list of variables that represents the data that will be QC. Ex.: ['wspd', 'tp']
+        mis_values:dict=None -> dictionary for missing values for each variable. Ex: {'wspd': [-9999, np.nan], 'tp': [-9999]}
+        limits:dict=None -> dictionary for sensors limits. If the sst sensor collect data between 0-40°C, the limits will {'sst': [0, 39]}
+        fine_limits:dict=None -> dictionary for outlier limit.
+        stuck_limit:int=None -> number of allowed repititive values
+        sigma_values:dict=None -> dictionary of sigma values for each continuity limit
+        continuity_limit:int=None -> number in hours that will be compared for time continuity value
+        height:dict=None -> height of the anemometer below the see surface
+        qc_config:dict=None -> configuration parameter that sumarizes all the quality control process
+        """
+
 
         if flag == 'hard':
             bool_array = np.logical_or(self.flag[parameter]<1, self.flag[parameter]>50)
@@ -709,7 +739,7 @@ class QCChecks():
                     print('-------------')
                     print(f'Check {func_value}')
                     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        self.convert_wind(wspd_name=parameter[0], gust_name=parameter[1])
+                        self.convert_wind(wspd_name=parameter[0], gust_name=parameter[1], height=self.qc_config[func_value]['height'][idx])
                 elif func_value == 'best_sensor':
                     print('-------------')
                     print(f'Check {func_value}')
