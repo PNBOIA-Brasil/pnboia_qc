@@ -332,6 +332,31 @@ class QCChecks():
         self.flag.loc[(index), parameter] = 6
         print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 6, parameter].count()} flagged data')
 
+    def true_north(self,
+                          parameter:str,
+                          annual_variation:float,
+                          year_reference:int,
+                          mag_deg:float):
+
+        """
+        Convert direction to true north
+
+        Required input:
+        - parameter: name used in the dataframe for parameter
+        - annual_variation: annual variation of magnetic declination
+        - year reference: year of reference of the magnetic declination
+        - mag_deg: magnetic declination for the year of reference 
+
+        Required checks: all checks
+        """
+        self.data['tmp_dec'] = (self.data.index.year - year_reference) * float(annual_variation) + float(mag_deg)
+
+        self.data.loc[self.flag[parameter] != 1, parameter] = self.data[parameter] + self.data['tmp_dec']
+        self.data.loc[self.data[parameter] < 0, parameter] = self.data[parameter] + 360
+        self.data.loc[self.data[parameter] > 360, parameter] = self.data[parameter] - 360
+
+        self.data.drop(columns='tmp_dec', inplace=True)
+
     def convert_wind(self,
                           wspd_name:str='wspd',
                           gust_name:str='gust',
@@ -356,7 +381,8 @@ class QCChecks():
 
         self.data.loc[(self.flag[wspd_name] == 0), wspd_name] = self.data[wspd_name] * (10 / height) ** 0.11
 
-        self.data.loc[(self.flag[gust_name] == 0), gust_name] = self.data[gust_name] * (10 / height) ** 0.11
+        if gust_name:
+            self.data.loc[(self.flag[gust_name] == 0), gust_name] = self.data[gust_name] * (10 / height) ** 0.11
 
 
     def best_sensor(self,
@@ -775,3 +801,12 @@ class QCChecks():
                                     self.front_except6(wspd_name=front_except['parameters'][0], swvht_name=front_except['parameters'][0])
                     except:
                         continue
+                elif func_value == 'true_north':
+                    print('-------------')
+                    print(f'Check {func_value}')
+                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                        print(f'parameter: {parameter}')
+                        self.true_north(parameter=parameter,
+                                        annual_variation=self.qc_config[func_value]['annual_variation'],
+                                        year_reference=self.qc_config[func_value]['year_reference'],
+                                        mag_deg=self.qc_config[func_value]['mag_deg'])
