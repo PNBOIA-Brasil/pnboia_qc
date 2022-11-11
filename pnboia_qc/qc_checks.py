@@ -175,7 +175,7 @@ class QCChecks():
         try:
             for mis_value in mis_values:
                 self.flag.loc[
-                    (self.data[parameter] == mis_value) &
+                    (self.data[parameter] == float(mis_value)) &
                     (self.flag[parameter] == 0), parameter] = 1
         except:
             print("No mis_value_limit for " + parameter)
@@ -336,7 +336,8 @@ class QCChecks():
                           parameter:str,
                           annual_variation:float,
                           year_reference:int,
-                          mag_deg:float):
+                          mag_deg:float,
+                          convert_to_int=True):
 
         """
         Convert direction to true north
@@ -352,8 +353,12 @@ class QCChecks():
         self.data['tmp_dec'] = (self.data.index.year - year_reference) * float(annual_variation) + float(mag_deg)
 
         self.data.loc[self.flag[parameter] != 1, parameter] = self.data[parameter] + self.data['tmp_dec']
-        self.data.loc[self.data[parameter] < 0, parameter] = self.data[parameter] + 360
-        self.data.loc[self.data[parameter] > 360, parameter] = self.data[parameter] - 360
+        self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] < 0), parameter] = self.data[parameter] + 360
+        self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] > 360), parameter] = self.data[parameter] - 360
+        print('ok')
+
+        if convert_to_int:
+            self.data[parameter][self.data[parameter].notna()] = self.data[parameter][self.data[parameter].notna()].astype(int)
 
         self.data.drop(columns='tmp_dec', inplace=True)
 
