@@ -355,7 +355,6 @@ class QCChecks():
         self.data.loc[self.flag[parameter] != 1, parameter] = self.data[parameter] + self.data['tmp_dec']
         self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] < 0), parameter] = self.data[parameter] + 360
         self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] > 360), parameter] = self.data[parameter] - 360
-        print('ok')
 
         if convert_to_int:
             self.data[parameter][self.data[parameter].notna()] = self.data[parameter][self.data[parameter].notna()].astype(int)
@@ -384,10 +383,10 @@ class QCChecks():
         if height == None:
             height = self.height[wspd_name]
 
-        self.data.loc[(self.flag[wspd_name] == 0), wspd_name] = self.data[wspd_name] * (10 / height) ** 0.11
+        self.data.loc[(self.flag[wspd_name] == 0), wspd_name] = (self.data[wspd_name] * (10 / height) ** 0.11).round(2)
 
         if gust_name:
-            self.data.loc[(self.flag[gust_name] == 0), gust_name] = self.data[gust_name] * (10 / height) ** 0.11
+            self.data.loc[(self.flag[gust_name] == 0), gust_name] = (self.data[gust_name] * (10 / height) ** 0.11).round(2)
 
 
     def best_sensor(self,
