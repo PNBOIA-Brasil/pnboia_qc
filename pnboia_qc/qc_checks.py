@@ -350,15 +350,26 @@ class QCChecks():
 
         Required checks: all checks
         """
-        self.data['tmp_dec'] = (self.data.index.year - year_reference) * float(annual_variation) + float(mag_deg)
-        self.data.loc[self.flag[parameter] != 1, parameter] = self.data[parameter] + self.data['tmp_dec']
-        self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] < 0), parameter] = self.data[parameter] + 360
-        self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] > 360), parameter] = self.data[parameter] - 360
+
+        # Conditions
+        filter_condition = (self.flag[parameter] != 1)
+        condition1 = (self.data[parameter] < 0)
+        condition2 = (self.data[parameter] > 360)
+
+        # Convertion factor calculation
+        tmp_mag = (self.data.loc[filter_condition].index.year - year_reference) * float(annual_variation) + float(mag_deg)
+
+        # Convertion
+        self.data.loc[filter_condition, f'{parameter}'] += tmp_mag
+
+        # Handling results out of circle degrees range
+        self.data.loc[filter_condition & condition1, parameter] += 360
+        self.data.loc[filter_condition & condition2, parameter] -= 360
 
         if convert_to_int:
             self.data[parameter][self.data[parameter].notna()] = self.data[parameter][self.data[parameter].notna()].astype(int)
 
-        self.data.drop(columns='tmp_dec', inplace=True)
+
 
     def convert_wind(self,
                           wspd_name:str='wspd',
