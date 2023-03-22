@@ -57,13 +57,13 @@ class QCChecks():
         ):
 
         self.id_flag = {
-            
+
         }
 
         self.tests = list(filter(lambda a: a[0] != '_', dir(self)))
 
         self.mis_values = mis_values
-        self.limits = limits       
+        self.limits = limits
         self.fine_limits = fine_limits
         self.stuck_limit = stuck_limit
         self.sigma_values = sigma_values
@@ -171,7 +171,7 @@ class QCChecks():
 
         if mis_values == None:
             mis_values = self.mis_values[parameter]
-           
+
         try:
             for mis_value in mis_values:
                 self.flag.loc[
@@ -182,7 +182,7 @@ class QCChecks():
 
         self.flag.loc[(self.data[parameter] == np.nan) & (self.flag[parameter] == 0), parameter] = 1
         print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 1, parameter].count()} flagged data')
-    
+
     def range(self,
                     parameter:str,
                     limits:list= None,
@@ -200,7 +200,7 @@ class QCChecks():
         Required checks: Missing value check
 
         Represented by number "2" -> HARD FLAG
-        """        
+        """
         try:
             if test == 'gross':
                 flag_id = 2
@@ -322,7 +322,7 @@ class QCChecks():
 
         Represented by number "6" -> HARD FLAG
         """
-        
+
         if stuck_limit == None:
             stuck_limit = self.stuck_limit
 
@@ -346,12 +346,11 @@ class QCChecks():
         - parameter: name used in the dataframe for parameter
         - annual_variation: annual variation of magnetic declination
         - year reference: year of reference of the magnetic declination
-        - mag_deg: magnetic declination for the year of reference 
+        - mag_deg: magnetic declination for the year of reference
 
         Required checks: all checks
         """
         self.data['tmp_dec'] = (self.data.index.year - year_reference) * float(annual_variation) + float(mag_deg)
-
         self.data.loc[self.flag[parameter] != 1, parameter] = self.data[parameter] + self.data['tmp_dec']
         self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] < 0), parameter] = self.data[parameter] + 360
         self.data.loc[(self.flag[parameter] != 1) & (self.data[parameter] > 360), parameter] = self.data[parameter] - 360
@@ -482,7 +481,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
-        
+
         Frontal exception 1
         Relation between wind direction and air temperature
 
@@ -510,7 +509,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
-        
+
         Frontal exception 3
         Relation between wind speed and air temperature 2
 
@@ -535,7 +534,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
-        
+
         Frontal exception 4
         Relation between low pressure and wind speed
 
@@ -576,7 +575,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
-        
+
         Frontal exception 5
         Relation between two pressures
 
@@ -618,7 +617,7 @@ class QCChecks():
 
         Required checks: Missing value check, range check, range check fine,
         stuck sensor, time continuity
-        
+
         Frontal exception 6
         Relation between significance wave height and wind speed
 
@@ -684,7 +683,7 @@ class QCChecks():
                                 limits:dict,
                                 parameters1:list=["wspd1", "wdir1", "gust1"],
                                 parameters2:list=["wspd2", "wdir2", "gust2"]):
-        
+
         """
         Comparison of Measurement Check
         Relation between related measurement (wind speed, gust, etc)
