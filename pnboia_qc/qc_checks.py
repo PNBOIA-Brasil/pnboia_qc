@@ -351,24 +351,31 @@ class QCChecks():
         Required checks: all checks
         """
 
+        flags = self.flag.add_prefix('flag_').copy()
+        data_flags = pd.merge(self.data.copy(), flags, on='date_time')
+
         # Conditions
-        filter_condition = (self.flag[parameter] != 1)
-        condition1 = (self.data[parameter] < 0)
-        condition2 = (self.data[parameter] > 360)
+        filter_condition = (data_flags[parameter] != 1)
+        condition1 = (data_flags[parameter] < 0)
+        condition2 = (data_flags[parameter] > 360)
 
         # Convertion factor calculation
-        tmp_mag = (self.data.loc[filter_condition].index.year - year_reference) * float(annual_variation) + float(mag_deg)
+        tmp_mag = (data_flags.loc[filter_condition].index.year - year_reference) * float(annual_variation) + float(mag_deg)
 
         # Convertion
-        self.data.loc[filter_condition, f'{parameter}'] += tmp_mag
+        data_flags.loc[filter_condition, parameter] += tmp_mag
 
         # Handling results out of circle degrees range
-        self.data.loc[filter_condition & condition1, parameter] += 360
-        self.data.loc[filter_condition & condition2, parameter] -= 360
+        data_flags.loc[filter_condition & condition1, parameter] += 360
+        data_flags.loc[filter_condition & condition2, parameter] -= 360
 
         if convert_to_int:
-            self.data[parameter][self.data[parameter].notna()] = self.data[parameter][self.data[parameter].notna()].astype(int)
+            data_flags[parameter][data_flags[parameter].notna()] = data_flags[parameter][data_flags[parameter].notna()].astype(int)
 
+        print(data_flags[['wvdir1','flag_wvdir1']])
+
+        flag_cols = data_flags.filter(regex='flag_*').columns
+        self.data = data_flags.drop(columns=flag_cols).copy()
 
 
     def convert_wind(self,
