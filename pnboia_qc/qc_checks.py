@@ -354,10 +354,9 @@ class QCChecks():
         flags = self.flag.add_prefix('flag_').copy()
         data_flags = pd.merge(self.data.copy(), flags, on='date_time')
 
-        # Conditions
+        # Filter condition for missing values
         filter_condition = (data_flags[parameter] != 1)
-        condition1 = (data_flags[parameter] < 0)
-        condition2 = (data_flags[parameter] > 360)
+
 
         # Convertion factor calculation
         tmp_mag = (data_flags.loc[filter_condition].index.year - year_reference) * float(annual_variation) + float(mag_deg)
@@ -366,6 +365,8 @@ class QCChecks():
         data_flags.loc[filter_condition, parameter] += tmp_mag
 
         # Handling results out of circle degrees range
+        condition1 = (data_flags[parameter] < 0)
+        condition2 = (data_flags[parameter] > 360)
         data_flags.loc[filter_condition & condition1, parameter] += 360
         data_flags.loc[filter_condition & condition2, parameter] -= 360
 
