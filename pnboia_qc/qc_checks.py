@@ -373,8 +373,6 @@ class QCChecks():
         if convert_to_int:
             data_flags[parameter][data_flags[parameter].notna()] = data_flags[parameter][data_flags[parameter].notna()].astype(int)
 
-        print(data_flags[['wvdir1','flag_wvdir1']])
-
         flag_cols = data_flags.filter(regex='flag_*').columns
         self.data = data_flags.drop(columns=flag_cols).copy()
 
