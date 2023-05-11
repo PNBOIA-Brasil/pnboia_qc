@@ -355,7 +355,7 @@ class QCChecks():
         data_flags = pd.merge(self.data.copy(), flags, on='date_time')
 
         # Filter condition for missing values
-        filter_condition = (data_flags[parameter] != 1)
+        filter_condition = (data_flags[f"flag_{parameter}"] != 1)
 
 
         # Convertion factor calculation
