@@ -743,38 +743,38 @@ class QCChecks():
                     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
                         print(f'parameter: {parameter}')
                         self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='fine')
-                elif func_value == 'fine_range':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        print(f'parameter: {parameter}')
-                        self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='fine')
-                elif func_value == 'ascat_anemometer':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    self.ascat_anemometer(limits=self.qc_config[func_value]['limits'],
-                                            parameters1=self.qc_config[func_value]['parameters'][0],
-                                            parameters2=self.qc_config[func_value]['parameters'][1])
-                elif func_value == 'swvht_mxwvht':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        self.swvht_mxwvht(swvht_name = parameter[0], mxwvht_name = parameter[1])
-                elif func_value == 'wind_speed_gust':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        self.wind_speed_gust(wspd_name=parameter[0], gust_name=parameter[1])
-                elif func_value == 'dewpt_atmp':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        self.dewpt_atmp(dewpt_name=parameter[0], atmp_name=parameter[1])
-                elif func_value == 'battery':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        self.battery(battery_name=parameter[0], pres_name=parameter[1])
+                # elif func_value == 'fine_range':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                #         print(f'parameter: {parameter}')
+                #         self.range(parameter=parameter, limits=self.qc_config[func_value]['limits'][idx], test='fine')
+                # elif func_value == 'ascat_anemometer':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     self.ascat_anemometer(limits=self.qc_config[func_value]['limits'],
+                #                             parameters1=self.qc_config[func_value]['parameters'][0],
+                #                             parameters2=self.qc_config[func_value]['parameters'][1])
+                # elif func_value == 'swvht_mxwvht':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                #         self.swvht_mxwvht(swvht_name = parameter[0], mxwvht_name = parameter[1])
+                # elif func_value == 'wind_speed_gust':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                #         self.wind_speed_gust(wspd_name=parameter[0], gust_name=parameter[1])
+                # elif func_value == 'dewpt_atmp':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                #         self.dewpt_atmp(dewpt_name=parameter[0], atmp_name=parameter[1])
+                # elif func_value == 'battery':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
+                #         self.battery(battery_name=parameter[0], pres_name=parameter[1])
                 elif func_value == 'stuck_sensor':
                     print('-------------')
                     print(f'Check {func_value}')
@@ -786,11 +786,11 @@ class QCChecks():
                     print(f'Check {func_value}')
                     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
                         self.convert_wind(wspd_name=parameter[0], gust_name=parameter[1], height=self.qc_config[func_value]['height'][idx])
-                elif func_value == 'best_sensor':
-                    print('-------------')
-                    print(f'Check {func_value}')
-                    self.best_sensor(parameters1=self.qc_config[func_value]['parameters'][0],
-                                    parameters2=self.qc_config[func_value]['parameters'][1])
+                # elif func_value == 'best_sensor':
+                #     print('-------------')
+                #     print(f'Check {func_value}')
+                #     self.best_sensor(parameters1=self.qc_config[func_value]['parameters'][0],
+                #                     parameters2=self.qc_config[func_value]['parameters'][1])
                 elif func_value == 't_continuity':
                     print('-------------')
                     print(f'Check {func_value}')
