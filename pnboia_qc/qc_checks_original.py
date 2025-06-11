@@ -378,13 +378,9 @@ class QCChecks():
 
 
     def convert_wind(self,
-                      wspd_name:str='wspd',
-                      gust_name:str='gust',
-                      height:float=10):
-        print("\n[DEBUG] convert_wind method called with:")
-        print(f"  - wspd_name: {wspd_name}")
-        print(f"  - gust_name: {gust_name}")
-        print(f"  - height: {height}")
+                          wspd_name:str='wspd',
+                          gust_name:str='gust',
+                          height:float=10):
 
         """
         Convert wind to 10 meters
@@ -400,94 +396,13 @@ class QCChecks():
 
         Return: var
         """
-        print("\n" + "="*80)
-        print(f"[DEBUG] Starting convert_wind for {wspd_name} and {gust_name} at height {height}m")
-        print(f"[DEBUG] Data shape: {self.data.shape}")
-        print(f"[DEBUG] Columns in data: {self.data.columns.tolist()}")
-        
-        # Debug info for wind speed
-        if wspd_name in self.data.columns:
-            print(f"\n[DEBUG] {wspd_name} values (first 5):")
-            print(self.data[[wspd_name]].head())
-            print(f"[DEBUG] {wspd_name} flags (first 5):")
-            print(self.flag[[wspd_name]].head())
-        else:
-            print(f"[ERROR] {wspd_name} not found in data columns!")
-            return
+        if height == None:
+            height = self.height[wspd_name]
 
-        # Debug info for gust
-        if gust_name and gust_name in self.data.columns:
-            print(f"\n[DEBUG] {gust_name} values (first 5):")
-            print(self.data[[gust_name]].head())
-            print(f"[DEBUG] {gust_name} flags (first 5):")
-            print(self.flag[[gust_name]].head())
-        else:
-            print(f"[WARNING] {gust_name} not found in data columns")
-        
-        if height is None:
-            print(f"[DEBUG] Using height from self.height: {self.height.get(wspd_name, 'Not found')}")
-            height = self.height.get(wspd_name, 10.0)  # Default to 10.0 if not found
-            
-        print(f"\n[DEBUG] Using height: {height}m for conversion")
-        print(f"[DEBUG] Formula: new_speed = original_speed * (10.0 / {height}) ^ 0.11")
-        
-        # Store original values for debugging
-        original_wspd = self.data[wspd_name].copy()
-        
-        # Apply wind speed correction
-        mask = (self.flag[wspd_name] == 0) & (~self.data[wspd_name].isna())
-        
-        print(f"\n[DEBUG] Converting {mask.sum()}/{len(mask)} values for {wspd_name}")
-        print(f"[DEBUG] First 5 mask values: {mask.head().tolist()}")
-        
-        if mask.any():
-            # Debug: Show values before conversion
-            print("\n[DEBUG] Sample values before conversion:")
-            sample_before = self.data.loc[mask, wspd_name].head(5)
-            print(sample_before)
-            
-            # Apply conversion
-            conversion_factor = (10.0 / height) ** 0.11
-            print(f"[DEBUG] Conversion factor: {conversion_factor:.6f}")
-            
-            self.data.loc[mask, wspd_name] = (self.data.loc[mask, wspd_name] * conversion_factor).round(2)
-            
-            # Debug: Show values after conversion
-            print("\n[DEBUG] Sample values after conversion:")
-            sample_after = self.data.loc[mask, wspd_name].head(5)
-            print(sample_after)
-            
-            # Show before/after comparison
-            print("\n[DEBUG] Before -> After:")
-            for idx in sample_before.index:
-                print(f"  {wspd_name}[{idx}]: {sample_before[idx]:.2f} -> {self.data.loc[idx, wspd_name]:.2f} (h={height}m)")
-        else:
-            print(f"[WARNING] No valid values to convert for {wspd_name} (all flagged or NaN)")
-            print(f"[DEBUG] Flag values: {self.flag[wspd_name].value_counts().to_dict()}")
-            print(f"[DEBUG] NaN values: {self.data[wspd_name].isna().sum()}")
+        self.data.loc[(self.flag[wspd_name] == 0), wspd_name] = (self.data[wspd_name] * (10 / height) ** 0.11).round(2)
 
-        # Process gust if available
-        if gust_name and gust_name in self.data.columns:
-            original_gust = self.data[gust_name].copy()
-            mask = (self.flag[gust_name] == 0) & (~self.data[gust_name].isna())
-            
-            print(f"\n[DEBUG] Converting {mask.sum()}/{len(mask)} values for {gust_name}")
-            
-            if mask.any():
-                # Apply conversion with the same factor
-                conversion_factor = (10.0 / height) ** 0.11
-                self.data.loc[mask, gust_name] = (self.data.loc[mask, gust_name] * conversion_factor).round(2)
-                
-                # Debug: Show before/after for a few values
-                sample_idx = self.data[mask].head(3).index
-                for idx in sample_idx:
-                    print(f"  {gust_name}[{idx}]: {original_gust[idx]:.2f} -> {self.data.loc[idx, gust_name]:.2f} (h={height}m)")
-            else:
-                print(f"[WARNING] No valid values to convert for {gust_name} (all flagged or NaN)")
-                print(f"[DEBUG] Flag values: {self.flag[gust_name].value_counts().to_dict()}")
-                print(f"[DEBUG] NaN values: {self.data[gust_name].isna().sum()}")
-        
-        print("="*80 + "\n")
+        if gust_name:
+            self.data.loc[(self.flag[gust_name] == 0), gust_name] = (self.data[gust_name] * (10 / height) ** 0.11).round(2)
 
 
     def best_sensor(self,
@@ -868,23 +783,9 @@ class QCChecks():
                         self.stuck_sensor(parameter=parameter, stuck_limit=self.qc_config[func_value]['limits'])
                 elif func_value == 'convert_wind':
                     print('-------------')
-                    print(f'[DEBUG] Starting {func_value} check')
-                    print(f'[DEBUG] Parameters from config: {self.qc_config[func_value]}')
+                    print(f'Check {func_value}')
                     for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        print(f'[DEBUG] Processing parameter set {idx+1}: {parameter}')
-                        print(f'[DEBUG] wspd_name: {parameter[0]}, gust_name: {parameter[1]}, height: {self.qc_config[func_value]["height"][idx]}')
-                        try:
-                            self.convert_wind(
-                                wspd_name=parameter[0], 
-                                gust_name=parameter[1], 
-                                height=float(self.qc_config[func_value]['height'][idx])
-                            )
-                            print(f'[DEBUG] Successfully processed {parameter[0]} and {parameter[1]}')
-                        except Exception as e:
-                            print(f'[ERROR] Error in convert_wind: {str(e)}')
-                            import traceback
-                            traceback.print_exc()
-                    print(f'[DEBUG] Completed {func_value} check')
+                        self.convert_wind(wspd_name=parameter[0], gust_name=parameter[1], height=self.qc_config[func_value]['height'][idx])
                 elif func_value == 'best_sensor':
                     print('-------------')
                     print(f'Check {func_value}')
