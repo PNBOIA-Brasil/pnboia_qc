@@ -870,16 +870,38 @@ class QCChecks():
                     print('-------------')
                     print(f'[DEBUG] Starting {func_value} check')
                     print(f'[DEBUG] Parameters from config: {self.qc_config[func_value]}')
-                    for idx, parameter in enumerate(self.qc_config[func_value]['parameters']):
-                        print(f'[DEBUG] Processing parameter set {idx+1}: {parameter}')
-                        print(f'[DEBUG] wspd_name: {parameter[0]}, gust_name: {parameter[1]}, height: {self.qc_config[func_value]["height"][idx]}')
+                    
+                    # Check if parameters is a list of lists (old format) or a list of parameter sets
+                    if (isinstance(self.qc_config[func_value]['parameters'], list) and 
+                        len(self.qc_config[func_value]['parameters']) > 0 and 
+                        isinstance(self.qc_config[func_value]['parameters'][0], list)):
+                        # Old format: parameters is a list of [wspd_name, gust_name] lists
+                        parameter_sets = self.qc_config[func_value]['parameters']
+                    else:
+                        # New format: parameters is a list of parameter sets
+                        parameter_sets = self.qc_config[func_value]['parameters']
+                    
+                    for idx, parameter_set in enumerate(parameter_sets):
+                        if not isinstance(parameter_set, (list, tuple)) or len(parameter_set) < 2:
+                            print(f'[WARNING] Invalid parameter set at index {idx}: {parameter_set}. Skipping.')
+                            continue
+                            
+                        wspd_name = parameter_set[0]
+                        gust_name = parameter_set[1] if len(parameter_set) > 1 else None
+                        
+                        # Get the height, default to 10 if not specified
+                        height_idx = min(idx, len(self.qc_config[func_value]['height']) - 1) if 'height' in self.qc_config[func_value] else 0
+                        height = float(self.qc_config[func_value]['height'][height_idx]) if 'height' in self.qc_config[func_value] else 10.0
+                        
+                        print(f'[DEBUG] Processing parameter set {idx+1}: wspd_name={wspd_name}, gust_name={gust_name}, height={height}')
+                        
                         try:
                             self.convert_wind(
-                                wspd_name=parameter[0], 
-                                gust_name=parameter[1], 
-                                height=float(self.qc_config[func_value]['height'][idx])
+                                wspd_name=wspd_name,
+                                gust_name=gust_name,
+                                height=height
                             )
-                            print(f'[DEBUG] Successfully processed {parameter[0]} and {parameter[1]}')
+                            print(f'[DEBUG] Successfully processed {wspd_name} and {gust_name}')
                         except Exception as e:
                             print(f'[ERROR] Error in convert_wind: {str(e)}')
                             import traceback
