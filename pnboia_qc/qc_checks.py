@@ -699,11 +699,8 @@ class QCChecks():
         Represented by number "56" -> SOFT FLAG
         """
 
-        self.data = self.data.sort_index(ascending=True)
-
-        self.data['date_time'] = self.data.index
-
-        self.data['date_time'] = self.data.diff()["date_time"] / np.timedelta64(1, 's')
+        if 'date_time' not in self.data.columns and isinstance(self.data.index, pd.DatetimeIndex):
+            self.data['date_time'] = self.data.index
 
         select_value = self.data.loc[(self.flag[wspd_name] == 8) & (self.data["date_time"] < 3700)]
 
@@ -716,8 +713,8 @@ class QCChecks():
         self.flag.loc[(self.flag.index.isin(select_value.index)), wspd_name] = 56
 
         print(f'{wspd_name}: {self.flag.loc[self.flag[wspd_name] == 56, wspd_name].count()} flagged data')
-
-        del self.data['date_time']
+        # Do not delete date_time column to preserve it for other QC checks
+        # del self.data['date_time']
 
     def front_except5(self,
                             pres_name:str='pres'):
@@ -741,11 +738,8 @@ class QCChecks():
         Represented by number "57" -> SOFT FLAG
         """
 
-        self.data = self.data.sort_index(ascending=True)
-
-        self.data['date_time'] = self.data.index
-
-        self.data['date_time'] = self.data.diff()["date_time"] / np.timedelta64(1, 's')
+        if 'date_time' not in self.data.columns and isinstance(self.data.index, pd.DatetimeIndex):
+            self.data['date_time'] = self.data.index
 
         select_value = self.data.loc[(self.flag[pres_name] == 8) & (self.data["date_time"] < 3700)]
 
@@ -757,7 +751,8 @@ class QCChecks():
 
         self.flag.loc[(self.flag.index.isin(select_value.index)), pres_name] = 57
 
-        self.data.drop(columns=['date_time'], inplace=True)
+        # Do not drop date_time column to preserve it for other QC checks
+        # self.data.drop(columns=['date_time'], inplace=True)
         print(f'{pres_name}: {self.flag.loc[self.flag[pres_name] == 57, pres_name].count()} flagged data')
 
     def front_except6(self,
