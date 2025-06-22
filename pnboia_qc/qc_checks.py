@@ -332,12 +332,41 @@ class QCChecks():
         self.flag.loc[(index), parameter] = 6
         print(f'{parameter}: {self.flag.loc[self.flag[parameter] == 6, parameter].count()} flagged data')
 
+    def convert_wind(self,
+                    wspd_name:str='wspd',
+                    gust_name:str='gust',
+                    height:float=10):
+        """
+        Convert wind to 10 meters
+        Using Liu equation to convert wind data to 10 meters
+
+        Required input:
+        - wspd_name: name used in the dataframe for wind speed
+        - gust_name: name used in the dataframe for gust speed
+        - height: height of anemometer sensor in the buoy
+
+        Required checks: Missing value check, range check, range check fine,
+        stuck sensor, windspeedgust check
+
+        Return: var
+        """
+        if height is None and hasattr(self, 'height') and wspd_name in self.height:
+            height = self.height[wspd_name]
+
+        # Only process rows where flag is 0 (good data)
+        mask = (self.flag[wspd_name] == 0)
+        self.data.loc[mask, wspd_name] = (self.data.loc[mask, wspd_name] * (10 / height) ** 0.11).round(2)
+
+        if gust_name and gust_name in self.data.columns:
+            mask = (self.flag[gust_name] == 0)
+            self.data.loc[mask, gust_name] = (self.data.loc[mask, gust_name] * (10 / height) ** 0.11).round(2)
+
     def true_north(self,
-                          parameter:str,
-                          annual_variation:float,
-                          year_reference:int,
-                          mag_deg:float,
-                          convert_to_int=True):
+                  parameter:str,
+                  annual_variation:float,
+                  year_reference:int,
+                  mag_deg:float,
+                  convert_to_int=True):
         print(f"\n[DEBUG] Starting true_north for parameter: {parameter}")
         print(f"[DEBUG] Input parameters - annual_variation: {annual_variation}, year_reference: {year_reference}, mag_deg: {mag_deg}, convert_to_int: {convert_to_int}")
         
