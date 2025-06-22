@@ -367,16 +367,16 @@ class QCChecks():
                   year_reference:int,
                   mag_deg:float,
                   convert_to_int=True):
-        print(f"\n[DEBUG] Starting true_north for parameter: {parameter}")
-        print(f"[DEBUG] Input parameters - annual_variation: {annual_variation}, year_reference: {year_reference}, mag_deg: {mag_deg}, convert_to_int: {convert_to_int}")
+        # print(f"\n[DEBUG] Starting true_north for parameter: {parameter}")
+        # print(f"[DEBUG] Input parameters - annual_variation: {annual_variation}, year_reference: {year_reference}, mag_deg: {mag_deg}, convert_to_int: {convert_to_int}")
         
         # Store original values for comparison
         original = self.data[parameter].copy()
         data_flags = self.data.copy()
         
         # Print sample of original data
-        print(f"[DEBUG] Sample original data (first 5 rows) for {parameter}:")
-        print(original.head())
+        # print(f"[DEBUG] Sample original data (first 5 rows) for {parameter}:")
+        # print(original.head())
         
         # Calculate year difference for annual variation
         data_flags['year'] = data_flags.index.year
@@ -386,74 +386,74 @@ class QCChecks():
         data_flags['mag_decl'] = mag_deg + (year_diff * annual_variation)
         
         # Print sample of calculated magnetic declination
-        print("\n[DEBUG] Sample magnetic declination values (first 5 rows):")
-        print(data_flags[['year', 'mag_decl']].head())
+        # print("\n[DEBUG] Sample magnetic declination values (first 5 rows):")
+        # print(data_flags[['year', 'mag_decl']].head())
         
         # Only apply correction to non-NaN values with flag 0
         filter_condition = (self.flag[parameter] == 0) & (data_flags[parameter].notna())
-        print(f"\n[DEBUG] Filter condition matched {filter_condition.sum()} rows for correction")
+        # print(f"\n[DEBUG] Filter condition matched {filter_condition.sum()} rows for correction")
         
         # Get the magnetic declination for conversion
         tmp_mag = data_flags.loc[filter_condition, 'mag_decl']
-        print(f"[DEBUG] Applying correction to {len(tmp_mag)} rows")
+        # print(f"[DEBUG] Applying correction to {len(tmp_mag)} rows")
         
         if len(tmp_mag) > 0:
             # Print sample of values before correction
-            print("\n[DEBUG] Sample values BEFORE correction:")
-            sample_before = data_flags.loc[filter_condition, parameter].head(5)
-            print(sample_before)
+            # print("\n[DEBUG] Sample values BEFORE correction:")
+            # sample_before = data_flags.loc[filter_condition, parameter].head(5)
+            # print(sample_before)
             
             # Apply correction only to non-NaN values with flag 0
             data_flags.loc[filter_condition, parameter] += tmp_mag
             
             # Print sample of values after correction (before wrap-around)
-            print("\n[DEBUG] Sample values AFTER correction (before wrap-around):")
-            print(data_flags.loc[filter_condition, parameter].head(5))
+            # print("\n[DEBUG] Sample values AFTER correction (before wrap-around):")
+            # print(data_flags.loc[filter_condition, parameter].head(5))
             
             # Handle wrap-around for degrees
             condition1 = (data_flags[parameter] < 0)
             condition2 = (data_flags[parameter] > 360)
             
-            print(f"[DEBUG] Rows with values < 0: {condition1.sum()}")
-            print(f"[DEBUG] Rows with values > 360: {condition2.sum()}")
+            # print(f"[DEBUG] Rows with values < 0: {condition1.sum()}")
+            # print(f"[DEBUG] Rows with values > 360: {condition2.sum()}")
             
-            if condition1.any():
-                print("\n[DEBUG] Sample values < 0 before wrap-around:")
-                print(data_flags.loc[condition1, parameter].head())
+            # if condition1.any():
+            #     print("\n[DEBUG] Sample values < 0 before wrap-around:")
+            #     print(data_flags.loc[condition1, parameter].head())
                 
-            if condition2.any():
-                print("\n[DEBUG] Sample values > 360 before wrap-around:")
-                print(data_flags.loc[condition2, parameter].head())
+            # if condition2.any():
+            #     print("\n[DEBUG] Sample values > 360 before wrap-around:")
+            #     print(data_flags.loc[condition2, parameter].head())
             
             data_flags.loc[condition1, parameter] = data_flags.loc[condition1, parameter] + 360
             data_flags.loc[condition2, parameter] = data_flags.loc[condition2, parameter] - 360
             
-            # Print sample of values after wrap-around
-            if condition1.any() or condition2.any():
-                print("\n[DEBUG] Sample values AFTER wrap-around:")
-                sample_after = data_flags.loc[filter_condition, parameter].head(5)
-                print(sample_after)
+            # # Print sample of values after wrap-around
+            # if condition1.any() or condition2.any():
+            #     print("\n[DEBUG] Sample values AFTER wrap-around:")
+            #     sample_after = data_flags.loc[filter_condition, parameter].head(5)
+            #     print(sample_after)
         
-        if convert_to_int:
-            print("\n[DEBUG] Converting values to integers")
-            non_na_count = data_flags[parameter].notna().sum()
-            print(f"[DEBUG] Converting {non_na_count} non-NA values to integers")
-            data_flags.loc[data_flags[parameter].notna(), parameter] = data_flags.loc[data_flags[parameter].notna(), parameter].astype(int)
+        # if convert_to_int:
+        #     print("\n[DEBUG] Converting values to integers")
+        #     non_na_count = data_flags[parameter].notna().sum()
+        #     print(f"[DEBUG] Converting {non_na_count} non-NA values to integers")
+        #     data_flags.loc[data_flags[parameter].notna(), parameter] = data_flags.loc[data_flags[parameter].notna(), parameter].astype(int)
         
-        # Show before/after for a few samples
-        sample_size = min(5, len(original[filter_condition]))
-        if sample_size > 0:
-            print(f"\n[DEBUG] Sample of {sample_size} corrections for {parameter}:")
-            sample_idx = original[filter_condition].index[:sample_size]
-            for idx in sample_idx:
-                print(f"  Row {idx}: {original[idx]} -> {data_flags.loc[idx, parameter]}")
+        # # Show before/after for a few samples
+        # sample_size = min(5, len(original[filter_condition]))
+        # if sample_size > 0:
+        #     print(f"\n[DEBUG] Sample of {sample_size} corrections for {parameter}:")
+        #     sample_idx = original[filter_condition].index[:sample_size]
+        #     for idx in sample_idx:
+        #         print(f"  Row {idx}: {original[idx]} -> {data_flags.loc[idx, parameter]}")
         
         # Store the result back to self.data
         self.data = data_flags.drop(columns=['mag_decl', 'year'], errors='ignore').copy()
         
         # Print final sample of data
-        print(f"\n[DEBUG] Final sample of {parameter} after true_north correction (first 5 rows):")
-        print(self.data[parameter].head())
+        # print(f"\n[DEBUG] Final sample of {parameter} after true_north correction (first 5 rows):")
+        # print(self.data[parameter].head())
         
         print(f"[DEBUG] true_north completed for {parameter}")
 
