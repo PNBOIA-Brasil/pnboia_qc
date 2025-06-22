@@ -338,43 +338,94 @@ class QCChecks():
                           year_reference:int,
                           mag_deg:float,
                           convert_to_int=True):
-
-        """
-        Convert direction to true north
-
-        Required input:
-        - parameter: name used in the dataframe for parameter
-        - annual_variation: annual variation of magnetic declination
-        - year reference: year of reference of the magnetic declination
-        - mag_deg: magnetic declination for the year of reference
-
-        Required checks: all checks
-        """
-
-        flags = self.flag.add_prefix('flag_').copy()
-        data_flags = pd.merge(self.data.copy(), flags, on='date_time')
-
-        # Filter condition for missing values
-        filter_condition = (data_flags[f"flag_{parameter}"] != 1)
-
-
-        # Convertion factor calculation
-        tmp_mag = (data_flags.loc[filter_condition].index.year - year_reference) * float(annual_variation) + float(mag_deg)
-
-        # Convertion
+        print(f"[DEBUG] true_north method called for parameter: {parameter}")
+        print(f"[DEBUG] Parameters - annual_variation: {annual_variation}, year_reference: {year_reference}, mag_deg: {mag_deg}")
+        
+        # Check if data has date_time information
+        if 'date_time' not in self.data.columns and not isinstance(self.data.index, pd.DatetimeIndex):
+            print(f"[ERROR] No date_time column or datetime index found in data")
+            print(f"[DEBUG] Available columns: {list(self.data.columns)}")
+            print(f"[DEBUG] Index type: {type(self.data.index)}")
+            raise ValueError("'date_time' information not found in data")
+        
+        # Convert direction to true north with corrections based on year and declination
+        data_flags = self.data.copy()
+        print(f"[DEBUG] Data shape: {data_flags.shape}")
+        
+        # Extract year from date_time (whether it's a column or index)
+        try:
+            if isinstance(self.data.index, pd.DatetimeIndex):
+                print(f"[DEBUG] Using datetime index for year extraction")
+                data_flags['year'] = self.data.index.year
+            else:
+                print(f"[DEBUG] Using date_time column for year extraction")
+                data_flags['year'] = pd.to_datetime(data_flags['date_time']).dt.year
+            print(f"[DEBUG] Unique years in data: {data_flags['year'].unique()}")
+        except Exception as e:
+            print(f"[ERROR] Failed to extract year from date_time: {str(e)}")
+            raise
+        
+        # Check if we have valid years to process
+        if data_flags['year'].isna().all():
+            print("[WARNING] true_north: No valid years found in data for correction")
+            return
+        
+        # Create a column with the magnetic declination based on the year
+        try:
+            year_decls = {y: mag_deg + annual_variation * (y - year_reference) for y in data_flags['year'].unique() if not pd.isna(y)}
+            print(f"[DEBUG] Year declinations calculated: {year_decls}")
+            data_flags['mag_decl'] = data_flags['year'].map(year_decls)
+            print(f"[DEBUG] Magnetic declination column created. Null count: {data_flags['mag_decl'].isna().sum()}")
+        except Exception as e:
+            print(f"[ERROR] Failed to create magnetic declination column: {str(e)}")
+            raise
+        
+        # Get the flag column for this parameter if it exists
+        flag_col = f"flag_{parameter}"
+        if flag_col in data_flags.columns:
+            filter_condition = data_flags[flag_col] == 0
+        else:
+            filter_condition = pd.Series(True, index=data_flags.index)
+        
+        print(f"[DEBUG] Rows to process (flag=0 or no flag): {filter_condition.sum()}")
+        
+        if filter_condition.sum() == 0:
+            print(f"[WARNING] No valid values to convert for {parameter} (all flagged or NaN)")
+            print(f"[DEBUG] Flag values: {data_flags[flag_col].value_counts().to_dict() if flag_col in data_flags.columns else 'No flag column'}")
+            print(f"[DEBUG] NaN values in parameter: {data_flags[parameter].isna().sum()}")
+            return
+        
+        # Store original values for comparison
+        original = data_flags[parameter].copy()
+        
+        # Get the magnetic declination for conversion
+        tmp_mag = data_flags.loc[filter_condition, 'mag_decl']
+        print(f"[DEBUG] Applying correction to {len(tmp_mag)} rows")
+        
+        # Apply correction only to non-NaN values with flag 0
         data_flags.loc[filter_condition, parameter] += tmp_mag
-
-        # Handling results out of circle degrees range
+        
+        # Handle wrap-around for degrees
         condition1 = (data_flags[parameter] < 0)
         condition2 = (data_flags[parameter] > 360)
-        data_flags.loc[filter_condition & condition1, parameter] += 360
-        data_flags.loc[filter_condition & condition2, parameter] -= 360
-
+        data_flags.loc[condition1, parameter] = data_flags.loc[condition1, parameter] + 360
+        data_flags.loc[condition2, parameter] = data_flags.loc[condition2, parameter] - 360
+        
         if convert_to_int:
             data_flags[parameter][data_flags[parameter].notna()] = data_flags[parameter][data_flags[parameter].notna()].astype(int)
-
-        flag_cols = data_flags.filter(regex='flag_*').columns
-        self.data = data_flags.drop(columns=flag_cols).copy()
+        
+        # Show before/after for a few samples
+        sample_size = min(5, len(original[filter_condition]))
+        if sample_size > 0:
+            print(f"[DEBUG] Sample of {sample_size} corrections for {parameter}:")
+            sample_idx = original[filter_condition].index[:sample_size]
+            for idx in sample_idx:
+                print(f"  Row {idx}: {original[idx]} -> {data_flags.loc[idx, parameter]}")
+        else:
+            print(f"[DEBUG] No samples to show for {parameter}")
+        
+        self.data = data_flags.drop(columns=['mag_decl', 'year'], errors='ignore').copy()
+        print(f"[DEBUG] true_north completed for {parameter}")
 
 
     def convert_wind(self,
