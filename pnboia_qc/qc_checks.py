@@ -414,15 +414,15 @@ class QCChecks():
         if convert_to_int:
             data_flags[parameter][data_flags[parameter].notna()] = data_flags[parameter][data_flags[parameter].notna()].astype(int)
         
-        # Show before/after for a few samples
-        sample_size = min(5, len(original[filter_condition]))
-        if sample_size > 0:
-            print(f"[DEBUG] Sample of {sample_size} corrections for {parameter}:")
-            sample_idx = original[filter_condition].index[:sample_size]
-            for idx in sample_idx:
-                print(f"  Row {idx}: {original[idx]} -> {data_flags.loc[idx, parameter]}")
-        else:
-            print(f"[DEBUG] No samples to show for {parameter}")
+        # # Show before/after for a few samples
+        # sample_size = min(5, len(original[filter_condition]))
+        # if sample_size > 0:
+        #     print(f"[DEBUG] Sample of {sample_size} corrections for {parameter}:")
+        #     sample_idx = original[filter_condition].index[:sample_size]
+        #     for idx in sample_idx:
+        #         print(f"  Row {idx}: {original[idx]} -> {data_flags.loc[idx, parameter]}")
+        # else:
+        #     print(f"[DEBUG] No samples to show for {parameter}")
         
         self.data = data_flags.drop(columns=['mag_decl', 'year'], errors='ignore').copy()
         print(f"[DEBUG] true_north completed for {parameter}")
@@ -432,10 +432,10 @@ class QCChecks():
                       wspd_name:str='wspd',
                       gust_name:str='gust',
                       height:float=10):
-        print("\n[DEBUG] convert_wind method called with:")
-        print(f"  - wspd_name: {wspd_name}")
-        print(f"  - gust_name: {gust_name}")
-        print(f"  - height: {height}")
+        # print("\n[DEBUG] convert_wind method called with:")
+        # print(f"  - wspd_name: {wspd_name}")
+        # print(f"  - gust_name: {gust_name}")
+        # print(f"  - height: {height}")
 
         """
         Convert wind to 10 meters
@@ -451,36 +451,36 @@ class QCChecks():
 
         Return: var
         """
-        print("\n" + "="*80)
-        print(f"[DEBUG] Starting convert_wind for {wspd_name} and {gust_name} at height {height}m")
-        print(f"[DEBUG] Data shape: {self.data.shape}")
-        print(f"[DEBUG] Columns in data: {self.data.columns.tolist()}")
+        # print("\n" + "="*80)
+        # print(f"[DEBUG] Starting convert_wind for {wspd_name} and {gust_name} at height {height}m")
+        # print(f"[DEBUG] Data shape: {self.data.shape}")
+        # print(f"[DEBUG] Columns in data: {self.data.columns.tolist()}")
         
         # Debug info for wind speed
-        if wspd_name in self.data.columns:
-            print(f"\n[DEBUG] {wspd_name} values (first 5):")
-            print(self.data[[wspd_name]].head())
-            print(f"[DEBUG] {wspd_name} flags (first 5):")
-            print(self.flag[[wspd_name]].head())
-        else:
-            print(f"[ERROR] {wspd_name} not found in data columns!")
-            return
+        # if wspd_name in self.data.columns:
+        #     print(f"\n[DEBUG] {wspd_name} values (first 5):")
+        #     print(self.data[[wspd_name]].head())
+        #     print(f"[DEBUG] {wspd_name} flags (first 5):")
+        #     print(self.flag[[wspd_name]].head())
+        # else:
+        #     print(f"[ERROR] {wspd_name} not found in data columns!")
+        #     return
 
-        # Debug info for gust
-        if gust_name and gust_name in self.data.columns:
-            print(f"\n[DEBUG] {gust_name} values (first 5):")
-            print(self.data[[gust_name]].head())
-            print(f"[DEBUG] {gust_name} flags (first 5):")
-            print(self.flag[[gust_name]].head())
-        else:
-            print(f"[WARNING] {gust_name} not found in data columns")
+        # # Debug info for gust
+        # if gust_name and gust_name in self.data.columns:
+        #     print(f"\n[DEBUG] {gust_name} values (first 5):")
+        #     print(self.data[[gust_name]].head())
+        #     print(f"[DEBUG] {gust_name} flags (first 5):")
+        #     print(self.flag[[gust_name]].head())
+        # else:
+        #     print(f"[WARNING] {gust_name} not found in data columns")
         
-        if height is None:
-            print(f"[DEBUG] Using height from self.height: {self.height.get(wspd_name, 'Not found')}")
-            height = self.height.get(wspd_name, 10.0)  # Default to 10.0 if not found
+        # if height is None:
+        #     print(f"[DEBUG] Using height from self.height: {self.height.get(wspd_name, 'Not found')}")
+        #     height = self.height.get(wspd_name, 10.0)  # Default to 10.0 if not found
             
-        print(f"\n[DEBUG] Using height: {height}m for conversion")
-        print(f"[DEBUG] Formula: new_speed = original_speed * (10.0 / {height}) ^ 0.11")
+        # print(f"\n[DEBUG] Using height: {height}m for conversion")
+        # print(f"[DEBUG] Formula: new_speed = original_speed * (10.0 / {height}) ^ 0.11")
         
         # Store original values for debugging
         original_wspd = self.data[wspd_name].copy()
@@ -488,34 +488,34 @@ class QCChecks():
         # Apply wind speed correction
         mask = (self.flag[wspd_name] == 0) & (~self.data[wspd_name].isna())
         
-        print(f"\n[DEBUG] Converting {mask.sum()}/{len(mask)} values for {wspd_name}")
-        print(f"[DEBUG] First 5 mask values: {mask.head().tolist()}")
+        # print(f"\n[DEBUG] Converting {mask.sum()}/{len(mask)} values for {wspd_name}")
+        # print(f"[DEBUG] First 5 mask values: {mask.head().tolist()}")
         
-        if mask.any():
-            # Debug: Show values before conversion
-            print("\n[DEBUG] Sample values before conversion:")
-            sample_before = self.data.loc[mask, wspd_name].head(5)
-            print(sample_before)
+        # if mask.any():
+        #     # Debug: Show values before conversion
+        #     print("\n[DEBUG] Sample values before conversion:")
+        #     sample_before = self.data.loc[mask, wspd_name].head(5)
+        #     print(sample_before)
             
-            # Apply conversion
-            conversion_factor = (10.0 / height) ** 0.11
-            print(f"[DEBUG] Conversion factor: {conversion_factor:.6f}")
+        #     # Apply conversion
+        #     conversion_factor = (10.0 / height) ** 0.11
+        #     print(f"[DEBUG] Conversion factor: {conversion_factor:.6f}")
             
-            self.data.loc[mask, wspd_name] = (self.data.loc[mask, wspd_name] * conversion_factor).round(2)
+        #     self.data.loc[mask, wspd_name] = (self.data.loc[mask, wspd_name] * conversion_factor).round(2)
             
-            # Debug: Show values after conversion
-            print("\n[DEBUG] Sample values after conversion:")
-            sample_after = self.data.loc[mask, wspd_name].head(5)
-            print(sample_after)
+        #     # Debug: Show values after conversion
+        #     print("\n[DEBUG] Sample values after conversion:")
+        #     sample_after = self.data.loc[mask, wspd_name].head(5)
+        #     print(sample_after)
             
-            # Show before/after comparison
-            print("\n[DEBUG] Before -> After:")
-            for idx in sample_before.index:
-                print(f"  {wspd_name}[{idx}]: {sample_before[idx]:.2f} -> {self.data.loc[idx, wspd_name]:.2f} (h={height}m)")
-        else:
-            print(f"[WARNING] No valid values to convert for {wspd_name} (all flagged or NaN)")
-            print(f"[DEBUG] Flag values: {self.flag[wspd_name].value_counts().to_dict()}")
-            print(f"[DEBUG] NaN values: {self.data[wspd_name].isna().sum()}")
+        #     # Show before/after comparison
+        #     print("\n[DEBUG] Before -> After:")
+        #     for idx in sample_before.index:
+        #         print(f"  {wspd_name}[{idx}]: {sample_before[idx]:.2f} -> {self.data.loc[idx, wspd_name]:.2f} (h={height}m)")
+        # else:
+        #     print(f"[WARNING] No valid values to convert for {wspd_name} (all flagged or NaN)")
+        #     print(f"[DEBUG] Flag values: {self.flag[wspd_name].value_counts().to_dict()}")
+        #     print(f"[DEBUG] NaN values: {self.data[wspd_name].isna().sum()}")
 
         # Process gust if available
         if gust_name and gust_name in self.data.columns:
@@ -524,21 +524,21 @@ class QCChecks():
             
             print(f"\n[DEBUG] Converting {mask.sum()}/{len(mask)} values for {gust_name}")
             
-            if mask.any():
-                # Apply conversion with the same factor
-                conversion_factor = (10.0 / height) ** 0.11
-                self.data.loc[mask, gust_name] = (self.data.loc[mask, gust_name] * conversion_factor).round(2)
+            # if mask.any():
+            #     # Apply conversion with the same factor
+            #     conversion_factor = (10.0 / height) ** 0.11
+            #     self.data.loc[mask, gust_name] = (self.data.loc[mask, gust_name] * conversion_factor).round(2)
                 
-                # Debug: Show before/after for a few values
-                sample_idx = self.data[mask].head(3).index
-                for idx in sample_idx:
-                    print(f"  {gust_name}[{idx}]: {original_gust[idx]:.2f} -> {self.data.loc[idx, gust_name]:.2f} (h={height}m)")
-            else:
-                print(f"[WARNING] No valid values to convert for {gust_name} (all flagged or NaN)")
-                print(f"[DEBUG] Flag values: {self.flag[gust_name].value_counts().to_dict()}")
-                print(f"[DEBUG] NaN values: {self.data[gust_name].isna().sum()}")
+            #     # Debug: Show before/after for a few values
+            #     sample_idx = self.data[mask].head(3).index
+            #     for idx in sample_idx:
+            #         print(f"  {gust_name}[{idx}]: {original_gust[idx]:.2f} -> {self.data.loc[idx, gust_name]:.2f} (h={height}m)")
+            # else:
+            #     print(f"[WARNING] No valid values to convert for {gust_name} (all flagged or NaN)")
+            #     print(f"[DEBUG] Flag values: {self.flag[gust_name].value_counts().to_dict()}")
+            #     print(f"[DEBUG] NaN values: {self.data[gust_name].isna().sum()}")
         
-        print("="*80 + "\n")
+        # print("="*80 + "\n")
 
 
     def best_sensor(self,
